@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Manitos de la Mater · Apostolado Infantil</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crema:#f6f1e4; --crema2:#efe7d4;
+  --navy:#25507e; --navy2:#1c3e63;
+  --azul:#7cb1de; --azul-cl:#d7e8f6;
+  --oro:#e8c157; --oro-cl:#f6e9bf;
+  --rojo:#d24a4a; --rojo2:#b23a3a;
+  --verde:#3a9d6e;
+  --blanco:#ffffff;
+  --t:#243447; --t2:#5a6b7d; --t3:#94a3b2;
+  --brd:#e3dcc9; --brd2:#cfc7b2;
+  --sombra:0 2px 10px rgba(37,80,126,.10);
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --disp:'Fredoka',var(--sans);
+}
+h1,h2,h3,.gate-box h1,#top .ttl,.card .nom,.hd,.tab{font-family:var(--disp)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:var(--sans);background:var(--crema);color:var(--t);font-size:16px;line-height:1.45}
+h1,h2,h3{margin:0}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:16px}
+
+/* ---------- PIN gate ---------- */
+#gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--azul-cl),var(--crema));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.gate-box{background:var(--blanco);border-radius:22px;box-shadow:var(--sombra);padding:34px 26px;max-width:360px;width:100%;text-align:center;border:1px solid var(--brd)}
+.gate-logo{font-size:44px;line-height:1}
+.gate-box h1{color:var(--navy);font-size:22px;margin:12px 0 2px;font-weight:800;letter-spacing:.3px}
+.gate-box p{color:var(--t2);font-size:13px;margin:0 0 20px}
+#pin{width:100%;text-align:center;font-size:30px;letter-spacing:12px;padding:12px;border:2px solid var(--brd2);border-radius:14px;background:var(--crema);color:var(--navy);font-weight:700;margin-bottom:14px}
+#pin:focus{outline:none;border-color:var(--azul)}
+.gate-err{color:var(--rojo);font-size:13px;height:16px;margin-bottom:8px}
+
+/* ---------- Topbar ---------- */
+#top{background:var(--navy);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#top .logo{font-size:24px}
+#top .ttl{font-weight:800;font-size:16px;letter-spacing:.3px;line-height:1.1}
+#top .ttl small{display:block;font-weight:500;font-size:10px;opacity:.75;letter-spacing:.5px}
+#top .sp{flex:1}
+#top .hoy{font-size:12px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:20px;white-space:nowrap}
+
+/* ---------- Tabs ---------- */
+#tabs{display:flex;background:var(--crema2);border-bottom:1px solid var(--brd);position:sticky;top:52px;z-index:20}
+.tab{flex:1;border:none;background:none;padding:12px 4px;font-size:12.5px;font-weight:700;color:var(--t2);border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab .ic{font-size:19px}
+.tab.on{color:var(--navy);border-bottom-color:var(--oro);background:var(--blanco)}
+
+/* ---------- Layout ---------- */
+main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
+.sc{display:none}.sc.on{display:block}
+
+.row-tools{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search{flex:1;padding:11px 14px;border:1px solid var(--brd2);border-radius:12px;background:var(--blanco);color:var(--t)}
+.search:focus{outline:none;border-color:var(--azul)}
+
+.btn{border:none;border-radius:12px;padding:11px 16px;font-size:14.5px;font-weight:700;color:#fff;background:var(--navy);display:inline-flex;align-items:center;gap:7px;box-shadow:var(--sombra)}
+.btn.oro{background:var(--oro);color:var(--navy2)}
+.btn.rojo{background:var(--rojo)}
+.btn.verde{background:var(--verde)}
+.btn.gris{background:#fff;color:var(--navy);border:1px solid var(--brd2);box-shadow:none}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
+.btn.block{width:100%;justify-content:center;padding:14px}
+.btn:active{transform:translateY(1px)}
+
+/* ---------- Cards ---------- */
+.card{background:var(--blanco);border:1px solid var(--brd);border-radius:16px;padding:14px;margin-bottom:11px;box-shadow:var(--sombra)}
+.card .nom{font-weight:800;color:var(--navy);font-size:16px}
+.card .sub{color:var(--t2);font-size:13px;margin-top:2px}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--azul-cl);color:var(--navy2);display:inline-flex;align-items:center;gap:4px}
+.pill.oro{background:var(--oro-cl);color:#8a6d16}
+.pill.rojo{background:#f7dede;color:var(--rojo2)}
+.pill.verde{background:#d9f0e4;color:#1f6b48}
+.pill.gris{background:var(--crema2);color:var(--t2)}
+.card-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.card-actions .btn{flex:1;min-width:110px;justify-content:center}
+
+.hd{font-size:13px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin:18px 2px 8px}
+.empty{text-align:center;color:var(--t3);padding:34px 10px;font-size:14px}
+.empty .big{font-size:38px;display:block;margin-bottom:8px}
+
+/* ---------- Modal ---------- */
+.mo{position:fixed;inset:0;background:rgba(28,44,62,.5);display:none;align-items:flex-end;justify-content:center;z-index:50;padding:0}
+.mo.on{display:flex}
+.mbox{background:var(--crema);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:92vh;overflow:auto;box-shadow:0 -6px 24px rgba(0,0,0,.2)}
+@media(min-width:560px){.mo{align-items:center}.mbox{border-radius:20px}}
+.mbox h2{color:var(--navy);font-size:19px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12.5px;font-weight:700;color:var(--t2);margin-bottom:5px}
+.fld input,.fld select,.fld textarea{width:100%;padding:11px 12px;border:1px solid var(--brd2);border-radius:11px;background:var(--blanco);color:var(--t)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--azul)}
+.fld textarea{resize:vertical;min-height:56px}
+.fg2{display:flex;gap:10px}.fg2>*{flex:1}
+.mo-actions{display:flex;gap:10px;margin-top:8px}
+.mo-actions .btn{flex:1;justify-content:center;padding:13px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy2);color:#fff;padding:11px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:200;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+.loading{text-align:center;color:var(--t3);padding:30px;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ============ PIN GATE ============ -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">🤲</div>
+    <h1>Manitos de la Mater</h1>
+    <p>Apostolado Infantil · Ingresá el PIN</p>
+    <input id="pin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <div class="gate-err" id="pinErr"></div>
+    <button class="btn block" onclick="checkPin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" style="display:none">
+  <div id="top">
+    <span class="logo">🤲</span>
+    <div class="ttl">Manitos de la Mater<small>APOSTOLADO INFANTIL</small></div>
+    <div class="sp"></div>
+    <div class="hoy" id="fechaHoy"></div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab on" data-sc="hoy" onclick="go('hoy')"><span class="ic">📋</span>Hoy</button>
+    <button class="tab" data-sc="ninos" onclick="go('ninos')"><span class="ic">👶</span>Niños</button>
+    <button class="tab" data-sc="cumple" onclick="go('cumple')"><span class="ic">🎂</span>Cumpleaños</button>
+  </div>
+
+  <main>
+    <!-- ---- HOY ---- -->
+    <section class="sc on" id="sc-hoy">
+      <button class="btn oro block" style="margin-bottom:14px" onclick="openIngreso()">➕ Registrar ingreso</button>
+      <div id="listHoy"><div class="loading">Cargando…</div></div>
+    </section>
+
+    <!-- ---- NIÑOS ---- -->
+    <section class="sc" id="sc-ninos">
+      <div class="row-tools">
+        <input class="search" id="buscarNino" placeholder="🔎 Buscar niño…" oninput="renderNinos()">
+        <button class="btn" onclick="openNino()">➕ Nuevo</button>
+      </div>
+      <div id="listNinos"><div class="loading">Cargando…</div></div>
+    </section>
+
+    <!-- ---- CUMPLEAÑOS ---- -->
+    <section class="sc" id="sc-cumple">
+      <div id="listCumple"><div class="loading">Cargando…</div></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ MODAL NIÑO ============ -->
+<div class="mo" id="mo-nino">
+  <div class="mbox">
+    <h2 id="moNinoTtl">👶 Nuevo niño</h2>
+    <input type="hidden" id="n-id">
+    <div class="fld">
+      <label>Nombre completo del niño *</label>
+      <input id="n-nombre" placeholder="Ej: Sofía Ramírez López">
+    </div>
+    <div class="fld">
+      <label>Nombre del padre / madre / tutor *</label>
+      <input id="n-tutor" placeholder="Ej: María López">
+    </div>
+    <div class="fld">
+      <label>Teléfono de contacto *</label>
+      <input id="n-tel" type="tel" inputmode="tel" placeholder="Ej: 0981 123 456">
+    </div>
+    <div class="fg2">
+      <div class="fld">
+        <label>Fecha de cumpleaños</label>
+        <input id="n-cumple" type="date">
+      </div>
+    </div>
+    <div class="fld">
+      <label>Comida especial / alergias / notas</label>
+      <textarea id="n-alim" placeholder="Ej: Sin lactosa. Alérgico al maní."></textarea>
+    </div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-nino')">Cancelar</button>
+      <button class="btn verde" id="btnDelNino" style="display:none;flex:0 0 auto" onclick="delNino()">🗑</button>
+      <button class="btn" onclick="saveNino()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL INGRESO ============ -->
+<div class="mo" id="mo-ing">
+  <div class="mbox">
+    <h2>➕ Registrar ingreso</h2>
+    <div class="fld">
+      <label>Niño *</label>
+      <select id="i-nino"></select>
+    </div>
+    <div class="fg2">
+      <div class="fld">
+        <label>Hora de entrada</label>
+        <input id="i-entrada" type="time">
+      </div>
+    </div>
+    <div class="fld">
+      <label>Nota del día (opcional)</label>
+      <input id="i-nota" placeholder="Ej: Trae merienda propia">
+    </div>
+    <p style="font-size:12.5px;color:var(--t2);margin:0 0 12px">
+      ¿No está en la lista? Agregalo primero en la pestaña <b>Niños</b>.</p>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-ing')">Cancelar</button>
+      <button class="btn oro" onclick="saveIngreso()">Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const SB_URL = 'https://hrqeuaxfjksdxhpnbzvn.supabase.co';
+const SB_KEY = 'sb_publishable_PEGlXR25GFLHjmaZoYyccA_GyqH_b9f';
+const PIN    = '3107';   // ← PIN de acceso de los encargados. Cambialo acá si querés otro.
+
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+/* ================= ESTADO ================= */
+let NINOS = [];        // fichas
+let ASIST_HOY = [];    // asistencia de hoy
+
+const hoyISO = () => new Date().toLocaleDateString('sv-SE');   // YYYY-MM-DD local
+const ahoraHM = () => new Date().toTimeString().slice(0,5);    // HH:MM local
+
+/* ================= PIN ================= */
+function checkPin(){
+  const v = document.getElementById('pin').value.trim();
+  if(v === PIN){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  }else{
+    document.getElementById('pinErr').textContent = 'PIN incorrecto';
+    document.getElementById('pin').value='';
+  }
+}
+document.getElementById('pin').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPin(); });
+
+/* ================= NAV ================= */
+function go(id){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.getElementById('sc-'+id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.sc===id));
+  if(id==='cumple') renderCumple();
+  if(id==='ninos') renderNinos();
+}
+
+/* ================= INIT ================= */
+async function initApp(){
+  const d = new Date();
+  document.getElementById('fechaHoy').textContent =
+    d.toLocaleDateString('es-PY',{weekday:'long',day:'numeric',month:'long'});
+  await cargarTodo();
+}
+
+async function cargarTodo(){
+  await Promise.all([cargarNinos(), cargarAsistHoy()]);
+  renderHoy(); renderNinos();
+}
+
+async function cargarNinos(){
+  const {data,error} = await sb.from('ninos').select('*').eq('activo',true).order('nombre_completo');
+  if(error){ toast('Error cargando niños'); console.error(error); return; }
+  NINOS = data||[];
+}
+
+async function cargarAsistHoy(){
+  const {data,error} = await sb.from('asistencia')
+    .select('*, ninos(nombre_completo,tutor_nombre,telefono,alimento_especial)')
+    .eq('fecha', hoyISO()).order('hora_entrada');
+  if(error){ toast('Error cargando asistencia'); console.error(error); return; }
+  ASIST_HOY = data||[];
+}
+
+/* ================= RENDER HOY ================= */
+function renderHoy(){
+  const cont = document.getElementById('listHoy');
+  if(!ASIST_HOY.length){
+    cont.innerHTML = '<div class="empty"><span class="big">🌤️</span>Nadie registrado hoy.<br>Tocá <b>Registrar ingreso</b> para empezar.</div>';
+    return;
+  }
+  const presentes = ASIST_HOY.filter(a=>!a.hora_salida);
+  const salieron  = ASIST_HOY.filter(a=>a.hora_salida);
+  let h='';
+  if(presentes.length){
+    h += `<div class="hd">🟢 En la guardería (${presentes.length})</div>`;
+    h += presentes.map(cardAsist).join('');
+  }
+  if(salieron.length){
+    h += `<div class="hd">✅ Ya se retiraron (${salieron.length})</div>`;
+    h += salieron.map(cardAsist).join('');
+  }
+  cont.innerHTML = h;
+}
+
+function cardAsist(a){
+  const n = a.ninos||{};
+  const tel = (n.telefono||'').replace(/\s/g,'');
+  const alim = (n.alimento_especial||'').trim();
+  const salio = !!a.hora_salida;
+  return `<div class="card">
+    <div class="nom">${esc(n.nombre_completo)||'(niño eliminado)'}</div>
+    <div class="sub">👤 ${esc(n.tutor_nombre)||'—'}</div>
+    <div class="meta">
+      <span class="pill">🕐 Entró ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'}</span>
+      ${salio?`<span class="pill verde">🚪 Salió ${a.hora_salida.slice(0,5)}</span>`:''}
+      ${alim?`<span class="pill oro">🍽 ${esc(alim)}</span>`:''}
+      ${a.nota?`<span class="pill gris">📝 ${esc(a.nota)}</span>`:''}
+    </div>
+    <div class="card-actions">
+      ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+      ${!salio?`<button class="btn oro sm" onclick="marcarSalida('${a.id}')">🚪 Marcar salida</button>`
+              :`<button class="btn gris sm" onclick="deshacerSalida('${a.id}')">↩ Deshacer salida</button>`}
+    </div>
+  </div>`;
+}
+
+/* ================= RENDER NIÑOS ================= */
+function renderNinos(){
+  const cont = document.getElementById('listNinos');
+  const q = (document.getElementById('buscarNino').value||'').toLowerCase();
+  const list = NINOS.filter(n =>
+    n.nombre_completo.toLowerCase().includes(q) ||
+    (n.tutor_nombre||'').toLowerCase().includes(q));
+  if(!NINOS.length){
+    cont.innerHTML = '<div class="empty"><span class="big">👶</span>Todavía no hay niños cargados.<br>Tocá <b>Nuevo</b> para agregar el primero.</div>';
+    return;
+  }
+  if(!list.length){ cont.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
+  cont.innerHTML = list.map(n=>{
+    const tel=(n.telefono||'').replace(/\s/g,'');
+    return `<div class="card">
+      <div class="nom">${esc(n.nombre_completo)}</div>
+      <div class="sub">👤 ${esc(n.tutor_nombre)}</div>
+      <div class="meta">
+        ${n.telefono?`<span class="pill">📞 ${esc(n.telefono)}</span>`:''}
+        ${n.cumpleanos?`<span class="pill oro">🎂 ${fmtFecha(n.cumpleanos)}</span>`:''}
+        ${n.alimento_especial?.trim()?`<span class="pill rojo">🍽 ${esc(n.alimento_especial)}</span>`:''}
+      </div>
+      <div class="card-actions">
+        ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+        <button class="btn gris sm" onclick="openNino('${n.id}')">✏ Editar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= RENDER CUMPLEAÑOS ================= */
+function renderCumple(){
+  const cont = document.getElementById('listCumple');
+  const conCumple = NINOS.filter(n=>n.cumpleanos);
+  if(!conCumple.length){
+    cont.innerHTML='<div class="empty"><span class="big">🎂</span>Ningún niño tiene cumpleaños cargado.</div>';
+    return;
+  }
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const conDias = conCumple.map(n=>{
+    const [,,mm,dd]=('--'+n.cumpleanos).match(/(\d{4})-(\d{2})-(\d{2})/)||[];
+    let prox=new Date(hoy.getFullYear(), +mm-1, +dd);
+    if(prox<hoy) prox=new Date(hoy.getFullYear()+1, +mm-1, +dd);
+    const dias=Math.round((prox-hoy)/86400000);
+    return {n, dias, prox};
+  }).sort((a,b)=>a.dias-b.dias);
+  cont.innerHTML = `<div class="hd">🎂 Próximos cumpleaños</div>` + conDias.map(({n,dias})=>{
+    const et = dias===0?'¡HOY! 🎉':dias===1?'Mañana':`En ${dias} días`;
+    const cls = dias===0?'rojo':dias<=7?'oro':'gris';
+    return `<div class="card">
+      <div class="nom">${esc(n.nombre_completo)}</div>
+      <div class="meta">
+        <span class="pill oro">🎂 ${fmtFecha(n.cumpleanos)} (${edad(n.cumpleanos)} años)</span>
+        <span class="pill ${cls}">⏳ ${et}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= MODAL NIÑO ================= */
+function openNino(id){
+  const del=document.getElementById('btnDelNino');
+  if(id){
+    const n=NINOS.find(x=>x.id===id);
+    document.getElementById('moNinoTtl').textContent='✏ Editar niño';
+    document.getElementById('n-id').value=n.id;
+    document.getElementById('n-nombre').value=n.nombre_completo||'';
+    document.getElementById('n-tutor').value=n.tutor_nombre||'';
+    document.getElementById('n-tel').value=n.telefono||'';
+    document.getElementById('n-cumple').value=n.cumpleanos||'';
+    document.getElementById('n-alim').value=n.alimento_especial||'';
+    del.style.display='inline-flex';
+  }else{
+    document.getElementById('moNinoTtl').textContent='👶 Nuevo niño';
+    ['n-id','n-nombre','n-tutor','n-tel','n-cumple','n-alim'].forEach(i=>document.getElementById(i).value='');
+    del.style.display='none';
+  }
+  openMo('mo-nino');
+}
+
+async function saveNino(){
+  const rec={
+    nombre_completo: val('n-nombre').trim(),
+    tutor_nombre:    val('n-tutor').trim(),
+    telefono:        val('n-tel').trim(),
+    cumpleanos:      val('n-cumple')||null,
+    alimento_especial: val('n-alim').trim()
+  };
+  if(!rec.nombre_completo || !rec.tutor_nombre || !rec.telefono){
+    toast('Completá nombre, tutor y teléfono'); return;
+  }
+  const id=val('n-id');
+  let error;
+  if(id){ ({error}=await sb.from('ninos').update(rec).eq('id',id)); }
+  else  { ({error}=await sb.from('ninos').insert(rec)); }
+  if(error){ toast('Error al guardar'); console.error(error); return; }
+  closeMo('mo-nino'); toast(id?'Ficha actualizada':'Niño agregado');
+  await cargarNinos(); renderNinos();
+}
+
+async function delNino(){
+  const id=val('n-id'); if(!id) return;
+  if(!confirm('¿Eliminar esta ficha? Se borrará también su historial de asistencia.')) return;
+  const {error}=await sb.from('ninos').delete().eq('id',id);
+  if(error){ toast('Error al eliminar'); console.error(error); return; }
+  closeMo('mo-nino'); toast('Ficha eliminada');
+  await cargarTodo();
+}
+
+/* ================= MODAL INGRESO ================= */
+function openIngreso(){
+  if(!NINOS.length){ toast('Primero cargá un niño en la pestaña Niños'); go('ninos'); return; }
+  const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
+  const sel=document.getElementById('i-nino');
+  sel.innerHTML = NINOS.map(n=>`<option value="${n.id}">${esc(n.nombre_completo)}${yaHoy.has(n.id)?' — (ya ingresó)':''}</option>`).join('');
+  document.getElementById('i-entrada').value=ahoraHM();
+  document.getElementById('i-nota').value='';
+  openMo('mo-ing');
+}
+
+async function saveIngreso(){
+  const nino_id=val('i-nino');
+  if(!nino_id){ toast('Elegí un niño'); return; }
+  const rec={ nino_id, fecha:hoyISO(), hora_entrada:val('i-entrada')||ahoraHM(), nota:val('i-nota').trim() };
+  const {error}=await sb.from('asistencia').insert(rec);
+  if(error){ toast('Error al registrar'); console.error(error); return; }
+  closeMo('mo-ing'); toast('Ingreso registrado ✅');
+  await cargarAsistHoy(); renderHoy(); go('hoy');
+}
+
+async function marcarSalida(id){
+  const {error}=await sb.from('asistencia').update({hora_salida:ahoraHM()}).eq('id',id);
+  if(error){ toast('Error'); console.error(error); return; }
+  toast('Salida marcada'); await cargarAsistHoy(); renderHoy();
+}
+async function deshacerSalida(id){
+  const {error}=await sb.from('asistencia').update({hora_salida:null}).eq('id',id);
+  if(error){ toast('Error'); console.error(error); return; }
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= UTILES ================= */
+function openMo(id){ document.getElementById(id).classList.add('on'); }
+function closeMo(id){ document.getElementById(id).classList.remove('on'); }
+function val(id){ return document.getElementById(id).value; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtFecha(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function edad(iso){ const b=new Date(iso), h=new Date(); let a=h.getFullYear()-b.getFullYear(); const mm=h.getMonth()-b.getMonth(); if(mm<0||(mm===0&&h.getDate()<b.getDate()))a--; return a; }
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* cerrar modal tocando el fondo */
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('on'); }));
+window.addEventListener('load',()=>document.getElementById('pin').focus());
+</script>
+</body>
+</html>
