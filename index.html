@@ -8,6 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- PWA / instalable -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#25507e">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Manitos">
 <style>
 :root{
   --crema:#f6f1e4; --crema2:#efe7d4;
@@ -35,6 +44,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 #gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--azul-cl),var(--crema));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 .gate-box{background:var(--blanco);border-radius:22px;box-shadow:var(--sombra);padding:34px 26px;max-width:360px;width:100%;text-align:center;border:1px solid var(--brd)}
 .gate-logo{font-size:44px;line-height:1}
+.gate-logo-img{width:190px;max-width:72%;height:auto;display:block;margin:0 auto 10px}
 .gate-box h1{color:var(--navy);font-size:22px;margin:12px 0 2px;font-weight:800;letter-spacing:.3px}
 .gate-box p{color:var(--t2);font-size:13px;margin:0 0 20px}
 #pin{width:100%;text-align:center;font-size:30px;letter-spacing:12px;padding:12px;border:2px solid var(--brd2);border-radius:14px;background:var(--crema);color:var(--navy);font-weight:700;margin-bottom:14px}
@@ -44,6 +54,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 /* ---------- Topbar ---------- */
 #top{background:var(--navy);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 #top .logo{font-size:24px}
+#top .logo-img{width:36px;height:36px;border-radius:9px;object-fit:cover;background:#fff;flex:0 0 auto}
 #top .ttl{font-weight:800;font-size:16px;letter-spacing:.3px;line-height:1.1}
 #top .ttl small{display:block;font-weight:500;font-size:10px;opacity:.75;letter-spacing:.5px}
 #top .sp{flex:1}
@@ -67,6 +78,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 .btn.oro{background:var(--oro);color:var(--navy2)}
 .btn.rojo{background:var(--rojo)}
 .btn.verde{background:var(--verde)}
+.btn.wa{background:#22a45b}
 .btn.gris{background:#fff;color:var(--navy);border:1px solid var(--brd2);box-shadow:none}
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
 .btn.block{width:100%;justify-content:center;padding:14px}
@@ -108,6 +120,14 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
 .loading{text-align:center;color:var(--t3);padding:30px;font-size:14px}
+
+/* ---------- Barra instalar app ---------- */
+#installBar{display:none;align-items:center;gap:10px;background:var(--oro-cl);border-bottom:1px solid var(--brd2);padding:9px 14px;font-size:13px;font-weight:700;color:#8a6d16}
+#installBar .sp{flex:1}
+.ios-steps{list-style:none;padding:0;margin:0}
+.ios-steps li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--brd);font-size:14px;color:var(--t)}
+.ios-steps li:last-child{border-bottom:none}
+.ios-steps .n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -115,9 +135,8 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 <!-- ============ PIN GATE ============ -->
 <div id="gate">
   <div class="gate-box">
-    <div class="gate-logo">🤲</div>
-    <h1>Manitos de la Mater</h1>
-    <p>Apostolado Infantil · Ingresá el PIN</p>
+    <img class="gate-logo-img" src="logo.png" alt="Manitos de la Mater · Apostolado Infantil">
+    <p>Ingresá el PIN de acceso</p>
     <input id="pin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
     <div class="gate-err" id="pinErr"></div>
     <button class="btn block" onclick="checkPin()">Entrar</button>
@@ -127,10 +146,17 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 <!-- ============ APP ============ -->
 <div id="app" style="display:none">
   <div id="top">
-    <span class="logo">🤲</span>
+    <img class="logo-img" src="logo.png" alt="Manitos de la Mater">
     <div class="ttl">Manitos de la Mater<small>APOSTOLADO INFANTIL</small></div>
     <div class="sp"></div>
     <div class="hoy" id="fechaHoy"></div>
+  </div>
+
+  <div id="installBar">
+    <span>📲 Instalá Manitos como app en tu celular</span>
+    <span class="sp"></span>
+    <button class="btn oro sm" onclick="instalarApp()">Instalar</button>
+    <button class="btn gris sm" onclick="ocultarInstall()">Ahora no</button>
   </div>
 
   <div id="tabs">
@@ -220,6 +246,23 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
     <div class="mo-actions">
       <button class="btn gris" onclick="closeMo('mo-ing')">Cancelar</button>
       <button class="btn oro" onclick="saveIngreso()">Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL INSTALAR EN iPHONE ============ -->
+<div class="mo" id="mo-ios">
+  <div class="mbox">
+    <h2>📲 Instalar en iPhone</h2>
+    <p style="font-size:13.5px;color:var(--t2);margin:0 0 14px">
+      En iPhone/iPad se instala desde Safari en 3 pasos:</p>
+    <ol class="ios-steps">
+      <li><span class="n">1</span><div>Tocá el botón <b>Compartir</b> ⬆️ (abajo, en la barra de Safari).</div></li>
+      <li><span class="n">2</span><div>Bajá y elegí <b>“Agregar a inicio”</b> (Add to Home Screen).</div></li>
+      <li><span class="n">3</span><div>Tocá <b>Agregar</b>. Queda el ícono de Manitos en tu pantalla.</div></li>
+    </ol>
+    <div class="mo-actions" style="margin-top:14px">
+      <button class="btn" onclick="closeMo('mo-ios')">Entendido</button>
     </div>
   </div>
 </div>
@@ -328,6 +371,7 @@ function cardAsist(a){
     </div>
     <div class="card-actions">
       ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+      ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
       ${!salio?`<button class="btn oro sm" onclick="marcarSalida('${a.id}')">🚪 Marcar salida</button>`
               :`<button class="btn gris sm" onclick="deshacerSalida('${a.id}')">↩ Deshacer salida</button>`}
     </div>
@@ -358,6 +402,7 @@ function renderNinos(){
       </div>
       <div class="card-actions">
         ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+        ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
         <button class="btn gris sm" onclick="openNino('${n.id}')">✏ Editar</button>
       </div>
     </div>`;
@@ -481,6 +526,15 @@ function closeMo(id){ document.getElementById(id).classList.remove('on'); }
 function val(id){ return document.getElementById(id).value; }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtFecha(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+// Normaliza teléfono paraguayo a formato internacional para WhatsApp (wa.me): 0981... -> 595981...
+function waNum(tel){
+  let d=(tel||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.startsWith('595')) return d;          // ya internacional
+  if(d.startsWith('0')) return '595'+d.slice(1);  // 0981... -> 595981...
+  return '595'+d;                            // sin 0 ni prefijo -> asume PY
+}
+function waLink(tel,msg){ const n=waNum(tel); return n?`https://wa.me/${n}${msg?('?text='+encodeURIComponent(msg)):''}`:''; }
 function edad(iso){ const b=new Date(iso), h=new Date(); let a=h.getFullYear()-b.getFullYear(); const mm=h.getMonth()-b.getMonth(); if(mm<0||(mm===0&&h.getDate()<b.getDate()))a--; return a; }
 let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
@@ -488,6 +542,41 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 /* cerrar modal tocando el fondo */
 document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('on'); }));
 window.addEventListener('load',()=>document.getElementById('pin').focus());
+
+/* ================= INSTALAR APP (PWA) ================= */
+let deferredPrompt=null;
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+
+function verInstallBar(){
+  if(yaInstalada || localStorage.getItem('mm_install_off')==='1') return;
+  const bar=document.getElementById('installBar'); if(bar) bar.style.display='flex';
+}
+function ocultarInstall(){
+  const bar=document.getElementById('installBar'); if(bar) bar.style.display='none';
+  localStorage.setItem('mm_install_off','1');   // no molestar de nuevo
+}
+async function instalarApp(){
+  if(deferredPrompt){                 // Android/Chrome: instalador nativo
+    deferredPrompt.prompt();
+    const {outcome}=await deferredPrompt.userChoice;
+    deferredPrompt=null;
+    document.getElementById('installBar').style.display='none';
+    if(outcome==='accepted') toast('App instalada ✅');
+  } else if(esIOS){                   // iPhone: no hay instalador, mostrar pasos
+    openMo('mo-ios');
+  } else {
+    toast('Usá el menú del navegador → “Instalar app”');
+  }
+}
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; verInstallBar(); });
+window.addEventListener('appinstalled', ()=>{ document.getElementById('installBar').style.display='none'; });
+if(esIOS && !yaInstalada) verInstallBar();   // iOS no dispara beforeinstallprompt
+
+/* ================= SERVICE WORKER (offline + instalable) ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
