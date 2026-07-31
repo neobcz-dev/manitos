@@ -128,6 +128,45 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 .ios-steps li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--brd);font-size:14px;color:var(--t)}
 .ios-steps li:last-child{border-bottom:none}
 .ios-steps .n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* ---------- Picker de niño (ingreso) ---------- */
+.pick-list{margin-top:8px;max-height:220px;overflow:auto;border:1px solid var(--brd);border-radius:11px;background:var(--blanco)}
+.pick-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:none;background:none;padding:11px 12px;font-size:14.5px;color:var(--t);border-bottom:1px solid var(--brd)}
+.pick-item:last-child{border-bottom:none}
+.pick-item.sel{background:var(--azul-cl);color:var(--navy2);font-weight:700}
+.pick-item .pick-tag{font-size:11px;font-weight:700;color:#8a6d16;background:var(--oro-cl);padding:2px 7px;border-radius:12px;margin-left:6px}
+.pick-item .pick-check{color:var(--verde);font-weight:800}
+.pick-empty{padding:16px;text-align:center;color:var(--t3);font-size:13px}
+
+/* ---------- Calendario ---------- */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cal-titulo{font-family:var(--disp);font-weight:700;color:var(--navy);font-size:16px;text-transform:capitalize}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{text-align:center;font-size:11px;font-weight:800;color:var(--t3);padding:4px 0}
+.cal-cell{position:relative;min-width:0;aspect-ratio:1;border-radius:9px;background:var(--bg2,#e2edf8);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:var(--t2)}
+.cal-cell.empty{background:transparent}
+.cal-cell.hoy{outline:2px solid var(--azul)}
+.cal-cell.bday{background:var(--oro-cl);color:#8a6d16;font-weight:800;cursor:pointer}
+.cal-cell .cal-dot{font-size:12px;line-height:1;margin-top:1px}
+
+/* ---------- Historial ---------- */
+.hist-row{background:var(--blanco);border:1px solid var(--brd);border-radius:11px;padding:10px 12px;margin-bottom:8px}
+.hist-f{font-weight:800;color:var(--navy);font-size:14px}
+.hist-h{font-size:13px;color:var(--t2);margin-top:2px}
+.hist-n{font-size:13px;color:var(--t);margin-top:5px;background:var(--crema2);padding:6px 9px;border-radius:8px}
+.sg-info{font-size:13px;font-weight:600;color:var(--navy2);background:var(--azul-cl);padding:10px 12px;border-radius:10px;margin-bottom:14px}
+
+/* ---------- Chips "quién retiró" ---------- */
+.quick-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.quick-chip{border:1px solid var(--brd2);background:var(--blanco);color:var(--navy);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
+.quick-chip:active{background:var(--azul-cl)}
+
+/* ---------- Stats por día ---------- */
+#dia-stats{display:flex;gap:8px;margin-bottom:12px}
+#dia-stats:empty{display:none}
+.dia-stat{flex:1;background:var(--blanco);border:1px solid var(--brd);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--sombra)}
+.dia-stat b{display:block;font-family:var(--disp);font-size:22px;color:var(--navy);line-height:1.1}
+.dia-stat span{font-size:11px;color:var(--t2);font-weight:700}
 </style>
 </head>
 <body>
@@ -161,15 +200,27 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 
   <div id="tabs">
     <button class="tab on" data-sc="hoy" onclick="go('hoy')"><span class="ic">📋</span>Hoy</button>
+    <button class="tab" data-sc="dia" onclick="go('dia')"><span class="ic">📆</span>Por día</button>
     <button class="tab" data-sc="ninos" onclick="go('ninos')"><span class="ic">👶</span>Niños</button>
-    <button class="tab" data-sc="cumple" onclick="go('cumple')"><span class="ic">🎂</span>Cumpleaños</button>
+    <button class="tab" data-sc="cumple" onclick="go('cumple')"><span class="ic">🎂</span>Cumple</button>
   </div>
 
   <main>
     <!-- ---- HOY ---- -->
     <section class="sc on" id="sc-hoy">
-      <button class="btn oro block" style="margin-bottom:14px" onclick="openIngreso()">➕ Registrar ingreso</button>
+      <button class="btn oro block" style="margin-bottom:9px" onclick="openIngreso()">➕ Registrar ingreso</button>
+      <button class="btn block" style="margin-bottom:14px" onclick="openSalidaGen()">🚪 Salida general del día</button>
       <div id="listHoy"><div class="loading">Cargando…</div></div>
+    </section>
+
+    <!-- ---- POR DÍA (historial) ---- -->
+    <section class="sc" id="sc-dia">
+      <div class="row-tools">
+        <input type="date" id="dia-fecha" class="search" oninput="renderDia()">
+        <button class="btn gris sm" onclick="diaHoy()">Hoy</button>
+      </div>
+      <div id="dia-stats"></div>
+      <div id="dia-lista"><div class="loading">Elegí un día…</div></div>
     </section>
 
     <!-- ---- NIÑOS ---- -->
@@ -183,6 +234,14 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 
     <!-- ---- CUMPLEAÑOS ---- -->
     <section class="sc" id="sc-cumple">
+      <div class="card">
+        <div class="cal-head">
+          <button class="btn gris sm" onclick="calNav(-1)">‹</button>
+          <div id="calTitulo" class="cal-titulo"></div>
+          <button class="btn gris sm" onclick="calNav(1)">›</button>
+        </div>
+        <div id="calGrid" class="cal-grid"></div>
+      </div>
       <div id="listCumple"><div class="loading">Cargando…</div></div>
     </section>
   </main>
@@ -216,7 +275,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <textarea id="n-alim" placeholder="Ej: Sin lactosa. Alérgico al maní."></textarea>
     </div>
     <div class="mo-actions">
-      <button class="btn gris" onclick="closeMo('mo-nino')">Cancelar</button>
+      <button class="btn gris" onclick="cancelNino()">Cancelar</button>
       <button class="btn verde" id="btnDelNino" style="display:none;flex:0 0 auto" onclick="delNino()">🗑</button>
       <button class="btn" onclick="saveNino()">Guardar</button>
     </div>
@@ -228,9 +287,11 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
   <div class="mbox">
     <h2>➕ Registrar ingreso</h2>
     <div class="fld">
-      <label>Niño *</label>
-      <select id="i-nino"></select>
+      <label>Buscar niño *</label>
+      <input id="i-buscar" class="search" placeholder="🔎 Escribí el nombre…" oninput="filtrarIngreso()" autocomplete="off">
+      <div id="i-lista" class="pick-list"></div>
     </div>
+    <button class="btn gris sm" style="margin-bottom:14px;width:100%;justify-content:center" onclick="nuevoNinoDesdeIngreso()">➕ El niño no está — registrarlo ahora</button>
     <div class="fg2">
       <div class="fld">
         <label>Hora de entrada</label>
@@ -241,11 +302,69 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <label>Nota del día (opcional)</label>
       <input id="i-nota" placeholder="Ej: Trae merienda propia">
     </div>
-    <p style="font-size:12.5px;color:var(--t2);margin:0 0 12px">
-      ¿No está en la lista? Agregalo primero en la pestaña <b>Niños</b>.</p>
     <div class="mo-actions">
       <button class="btn gris" onclick="closeMo('mo-ing')">Cancelar</button>
       <button class="btn oro" onclick="saveIngreso()">Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL SALIDA INDIVIDUAL ============ -->
+<div class="mo" id="mo-salida">
+  <div class="mbox">
+    <h2 id="salTtl">🚪 Marcar salida</h2>
+    <input type="hidden" id="sal-id">
+    <div class="fld">
+      <label>Hora de salida</label>
+      <input id="sal-hora" type="time">
+    </div>
+    <div class="fld">
+      <label>¿Quién lo retiró?</label>
+      <div class="quick-row" id="sal-quick"></div>
+      <input id="sal-retiro" placeholder="Ej: Papá — Nelson Busto">
+    </div>
+    <div class="fld">
+      <label>Nota de salida (opcional)</label>
+      <textarea id="sal-nota" placeholder="Ej: Se sintió mal, lo buscó el papá."></textarea>
+    </div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-salida')">Cancelar</button>
+      <button class="btn oro" onclick="saveSalida()">Registrar salida</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL SALIDA GENERAL ============ -->
+<div class="mo" id="mo-salgen">
+  <div class="mbox">
+    <h2>🚪 Salida general del día</h2>
+    <p style="font-size:13px;color:var(--t2);margin:0 0 14px">
+      Marca la hora de salida a <b>todos los niños que ese día siguen sin salida</b> registrada.</p>
+    <div class="fg2">
+      <div class="fld">
+        <label>Día</label>
+        <input id="sg-fecha" type="date" oninput="actualizarSgInfo()">
+      </div>
+      <div class="fld">
+        <label>Hora de salida</label>
+        <input id="sg-hora" type="time">
+      </div>
+    </div>
+    <div id="sg-info" class="sg-info">…</div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-salgen')">Cancelar</button>
+      <button class="btn oro" onclick="salidaGeneral()">Marcar salida a todos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL HISTORIAL DE ASISTENCIA ============ -->
+<div class="mo" id="mo-hist">
+  <div class="mbox">
+    <h2 id="histTtl">📅 Historial</h2>
+    <div id="histBody"><div class="loading">Cargando…</div></div>
+    <div class="mo-actions" style="margin-top:12px">
+      <button class="btn gris" onclick="closeMo('mo-hist')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -305,6 +424,7 @@ function go(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.sc===id));
   if(id==='cumple') renderCumple();
   if(id==='ninos') renderNinos();
+  if(id==='dia') renderDia();
 }
 
 /* ================= INIT ================= */
@@ -366,13 +486,15 @@ function cardAsist(a){
     <div class="meta">
       <span class="pill">🕐 Entró ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'}</span>
       ${salio?`<span class="pill verde">🚪 Salió ${a.hora_salida.slice(0,5)}</span>`:''}
+      ${salio&&a.retirado_por?`<span class="pill verde">🙋 Retiró: ${esc(a.retirado_por)}</span>`:''}
       ${alim?`<span class="pill oro">🍽 ${esc(alim)}</span>`:''}
       ${a.nota?`<span class="pill gris">📝 ${esc(a.nota)}</span>`:''}
+      ${salio&&a.nota_salida?`<span class="pill rojo">🚪📝 ${esc(a.nota_salida)}</span>`:''}
     </div>
     <div class="card-actions">
       ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
       ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
-      ${!salio?`<button class="btn oro sm" onclick="marcarSalida('${a.id}')">🚪 Marcar salida</button>`
+      ${!salio?`<button class="btn oro sm" onclick="openSalida('${a.id}')">🚪 Marcar salida</button>`
               :`<button class="btn gris sm" onclick="deshacerSalida('${a.id}')">↩ Deshacer salida</button>`}
     </div>
   </div>`;
@@ -403,14 +525,54 @@ function renderNinos(){
       <div class="card-actions">
         ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
         ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
+        <button class="btn gris sm" onclick="verHistorial('${n.id}')">📅 Historial</button>
         <button class="btn gris sm" onclick="openNino('${n.id}')">✏ Editar</button>
       </div>
     </div>`;
   }).join('');
 }
 
+/* ================= CALENDARIO ================= */
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DOW=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+let calAnio=null, calMes=null, _calBday={};
+
+function calNav(d){
+  calMes+=d;
+  if(calMes<0){ calMes=11; calAnio--; }
+  if(calMes>11){ calMes=0; calAnio++; }
+  renderCalendario();
+}
+function calDia(d){ const arr=_calBday[d]; if(arr&&arr.length) toast('🎂 '+arr.join(', ')); }
+
+function renderCalendario(){
+  if(calAnio==null){ const d=new Date(); calAnio=d.getFullYear(); calMes=d.getMonth(); }
+  document.getElementById('calTitulo').textContent=`${MESES[calMes]} ${calAnio}`;
+  // cumpleaños del mes mostrado: dia -> [nombres]
+  _calBday={};
+  NINOS.forEach(n=>{
+    if(!n.cumpleanos) return;
+    const p=n.cumpleanos.split('-'); if(p.length<3) return;
+    if((+p[1]-1)===calMes){ const dd=+p[2]; (_calBday[dd]=_calBday[dd]||[]).push(n.nombre_completo); }
+  });
+  const first=new Date(calAnio,calMes,1).getDay();
+  const dim=new Date(calAnio,calMes+1,0).getDate();
+  const hoy=new Date();
+  const esMesActual=(hoy.getFullYear()===calAnio && hoy.getMonth()===calMes);
+  let h=DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++) h+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const bday=_calBday[d];
+    const hoyCls=(esMesActual&&hoy.getDate()===d)?' hoy':'';
+    h+=`<div class="cal-cell${bday?' bday':''}${hoyCls}"${bday?` onclick="calDia(${d})" title="${esc(bday.join(', '))}"`:''}>`+
+       `<span class="cal-d">${d}</span>${bday?'<span class="cal-dot">🎂</span>':''}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=h;
+}
+
 /* ================= RENDER CUMPLEAÑOS ================= */
 function renderCumple(){
+  renderCalendario();
   const cont = document.getElementById('listCumple');
   const conCumple = NINOS.filter(n=>n.cumpleanos);
   if(!conCumple.length){
@@ -458,6 +620,7 @@ function openNino(id){
   }
   openMo('mo-nino');
 }
+function cancelNino(){ _volverIngreso=false; closeMo('mo-nino'); }
 
 async function saveNino(){
   const rec={
@@ -471,12 +634,13 @@ async function saveNino(){
     toast('Completá nombre, tutor y teléfono'); return;
   }
   const id=val('n-id');
-  let error;
+  let error, nuevoId=null;
   if(id){ ({error}=await sb.from('ninos').update(rec).eq('id',id)); }
-  else  { ({error}=await sb.from('ninos').insert(rec)); }
+  else  { const r=await sb.from('ninos').insert(rec).select('id').single(); error=r.error; nuevoId=r.data?.id; }
   if(error){ toast('Error al guardar'); console.error(error); return; }
   closeMo('mo-nino'); toast(id?'Ficha actualizada':'Niño agregado');
   await cargarNinos(); renderNinos();
+  if(_volverIngreso){ _volverIngreso=false; openIngreso(nuevoId); }  // vuelve al ingreso con el nuevo preseleccionado
 }
 
 async function delNino(){
@@ -489,24 +653,67 @@ async function delNino(){
 }
 
 /* ================= MODAL INGRESO ================= */
-function openIngreso(){
-  if(!NINOS.length){ toast('Primero cargá un niño en la pestaña Niños'); go('ninos'); return; }
-  const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
-  const sel=document.getElementById('i-nino');
-  sel.innerHTML = NINOS.map(n=>`<option value="${n.id}">${esc(n.nombre_completo)}${yaHoy.has(n.id)?' — (ya ingresó)':''}</option>`).join('');
+let ingSel=null;          // id del niño seleccionado en el ingreso
+let _volverIngreso=false; // volver al ingreso tras registrar un niño nuevo
+
+function openIngreso(preId){
+  ingSel = preId || null;
+  document.getElementById('i-buscar').value='';
   document.getElementById('i-entrada').value=ahoraHM();
   document.getElementById('i-nota').value='';
+  filtrarIngreso();
   openMo('mo-ing');
 }
 
+function filtrarIngreso(){
+  const q=(document.getElementById('i-buscar').value||'').toLowerCase();
+  const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
+  const list=NINOS.filter(n=>n.nombre_completo.toLowerCase().includes(q)||(n.tutor_nombre||'').toLowerCase().includes(q));
+  const cont=document.getElementById('i-lista');
+  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados. Tocá “registrarlo ahora”.</div>'; return; }
+  if(!list.length){ cont.innerHTML='<div class="pick-empty">Sin resultados. Tocá “registrarlo ahora”.</div>'; return; }
+  cont.innerHTML=list.slice(0,40).map(n=>
+    `<button type="button" class="pick-item${ingSel===n.id?' sel':''}" onclick="selIngreso('${n.id}')">`+
+      `<span>${esc(n.nombre_completo)}${yaHoy.has(n.id)?'<span class="pick-tag">ya ingresó</span>':''}</span>`+
+      `${ingSel===n.id?'<span class="pick-check">✓</span>':''}`+
+    `</button>`).join('');
+}
+function selIngreso(id){ ingSel=id; filtrarIngreso(); }
+
+function nuevoNinoDesdeIngreso(){
+  _volverIngreso=true;
+  closeMo('mo-ing');
+  openNino();
+}
+
 async function saveIngreso(){
-  const nino_id=val('i-nino');
-  if(!nino_id){ toast('Elegí un niño'); return; }
-  const rec={ nino_id, fecha:hoyISO(), hora_entrada:val('i-entrada')||ahoraHM(), nota:val('i-nota').trim() };
+  if(!ingSel){ toast('Elegí un niño de la lista'); return; }
+  const rec={ nino_id:ingSel, fecha:hoyISO(), hora_entrada:val('i-entrada')||ahoraHM(), nota:val('i-nota').trim() };
   const {error}=await sb.from('asistencia').insert(rec);
   if(error){ toast('Error al registrar'); console.error(error); return; }
+  ingSel=null;
   closeMo('mo-ing'); toast('Ingreso registrado ✅');
   await cargarAsistHoy(); renderHoy(); go('hoy');
+}
+
+/* ================= HISTORIAL DE ASISTENCIA ================= */
+async function verHistorial(id){
+  const n=NINOS.find(x=>x.id===id);
+  document.getElementById('histTtl').textContent='📅 Historial — '+(n?n.nombre_completo:'');
+  document.getElementById('histBody').innerHTML='<div class="loading">Cargando…</div>';
+  openMo('mo-hist');
+  const {data,error}=await sb.from('asistencia')
+    .select('fecha,hora_entrada,hora_salida,nota,nota_salida,retirado_por').eq('nino_id',id).order('fecha',{ascending:false});
+  const body=document.getElementById('histBody');
+  if(error){ body.innerHTML='<div class="empty">Error al cargar el historial.</div>'; console.error(error); return; }
+  if(!data||!data.length){ body.innerHTML='<div class="empty"><span class="big">📭</span>Sin registros de asistencia todavía.</div>'; return; }
+  body.innerHTML=`<div class="hd">${data.length} día(s) registrados</div>`+data.map(a=>
+    `<div class="hist-row">`+
+      `<div class="hist-f">${fmtFecha(a.fecha)}</div>`+
+      `<div class="hist-h">🕐 Entrada ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'} · Salida ${a.hora_salida?a.hora_salida.slice(0,5):'—'}${a.retirado_por?' · 🙋 '+esc(a.retirado_por):''}</div>`+
+      `${a.nota?`<div class="hist-n">📝 ${esc(a.nota)}</div>`:''}`+
+      `${a.nota_salida?`<div class="hist-n">🚪📝 ${esc(a.nota_salida)}</div>`:''}`+
+    `</div>`).join('');
 }
 
 async function marcarSalida(id){
@@ -515,8 +722,96 @@ async function marcarSalida(id){
   toast('Salida marcada'); await cargarAsistHoy(); renderHoy();
 }
 async function deshacerSalida(id){
-  const {error}=await sb.from('asistencia').update({hora_salida:null}).eq('id',id);
+  const {error}=await sb.from('asistencia').update({hora_salida:null,nota_salida:'',retirado_por:''}).eq('id',id);
   if(error){ toast('Error'); console.error(error); return; }
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= SALIDA INDIVIDUAL (con nota + quién retiró) ================= */
+const RETIROS=['Papá','Mamá','Hermano/a','Abuelo/a','Tío/a','Otro'];
+function openSalida(id){
+  const a=ASIST_HOY.find(x=>x.id===id); const n=a&&a.ninos;
+  document.getElementById('salTtl').textContent='🚪 Salida'+(n?' — '+n.nombre_completo:'');
+  document.getElementById('sal-id').value=id;
+  document.getElementById('sal-hora').value=ahoraHM();
+  document.getElementById('sal-retiro').value='';
+  document.getElementById('sal-nota').value='';
+  document.getElementById('sal-quick').innerHTML=RETIROS.map(r=>`<button type="button" class="quick-chip" onclick="setRetiro('${r}')">${r}</button>`).join('');
+  openMo('mo-salida');
+}
+function setRetiro(r){
+  const inp=document.getElementById('sal-retiro');
+  inp.value = (r==='Otro') ? '' : r+' — ';
+  inp.focus();
+}
+async function saveSalida(){
+  const id=val('sal-id'); if(!id) return;
+  const rec={ hora_salida: val('sal-hora')||ahoraHM(), retirado_por: val('sal-retiro').trim(), nota_salida: val('sal-nota').trim() };
+  const {error}=await sb.from('asistencia').update(rec).eq('id',id);
+  if(error){ toast('Error al marcar salida'); console.error(error); return; }
+  closeMo('mo-salida'); toast('Salida registrada ✅');
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= HISTORIAL POR DÍA ================= */
+async function renderDia(){
+  const f=document.getElementById('dia-fecha');
+  if(!f.value) f.value=hoyISO();
+  const fecha=f.value;
+  const stats=document.getElementById('dia-stats');
+  const cont=document.getElementById('dia-lista');
+  stats.innerHTML=''; cont.innerHTML='<div class="loading">Cargando…</div>';
+  const {data,error}=await sb.from('asistencia')
+    .select('*, ninos(nombre_completo,tutor_nombre,telefono)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ cont.innerHTML='<div class="empty">Error al cargar.</div>'; console.error(error); return; }
+  if(!data||!data.length){ cont.innerHTML='<div class="empty"><span class="big">📭</span>Sin registros ese día.</div>'; return; }
+  const entraron=data.length, salieron=data.filter(a=>a.hora_salida).length, presentes=entraron-salieron;
+  stats.innerHTML=
+    `<div class="dia-stat"><b>${entraron}</b><span>ENTRARON</span></div>`+
+    `<div class="dia-stat"><b>${salieron}</b><span>SALIERON</span></div>`+
+    `<div class="dia-stat"><b>${presentes}</b><span>SIN SALIDA</span></div>`;
+  cont.innerHTML=data.map(a=>{
+    const n=a.ninos||{}; const salio=!!a.hora_salida;
+    return `<div class="card">
+      <div class="nom">${esc(n.nombre_completo)||'(niño eliminado)'}</div>
+      <div class="meta">
+        <span class="pill">🕐 Entró ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'}</span>
+        <span class="pill ${salio?'verde':'gris'}">🚪 ${salio?('Salió '+a.hora_salida.slice(0,5)):'Sin salida'}</span>
+        ${salio&&a.retirado_por?`<span class="pill verde">🙋 ${esc(a.retirado_por)}</span>`:''}
+        ${a.nota?`<span class="pill gris">📝 ${esc(a.nota)}</span>`:''}
+        ${a.nota_salida?`<span class="pill rojo">🚪📝 ${esc(a.nota_salida)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function diaHoy(){ document.getElementById('dia-fecha').value=hoyISO(); renderDia(); }
+
+/* ================= SALIDA GENERAL DEL DÍA ================= */
+function openSalidaGen(){
+  document.getElementById('sg-fecha').value=hoyISO();
+  document.getElementById('sg-hora').value=ahoraHM();
+  actualizarSgInfo();
+  openMo('mo-salgen');
+}
+async function actualizarSgInfo(){
+  const info=document.getElementById('sg-info');
+  const fecha=val('sg-fecha');
+  if(!fecha){ info.textContent='Elegí un día.'; return; }
+  info.textContent='Contando pendientes…';
+  const {data,error}=await sb.from('asistencia').select('id').eq('fecha',fecha).is('hora_salida',null);
+  if(error){ info.textContent=''; console.error(error); return; }
+  const n=(data||[]).length, f=fmtFecha(fecha);
+  info.textContent = n? `${n} niño(s) sin salida el ${f} recibirán la hora indicada.` : `No hay niños pendientes de salida el ${f}.`;
+}
+async function salidaGeneral(){
+  const fecha=val('sg-fecha'), hora=val('sg-hora')||ahoraHM();
+  if(!fecha){ toast('Elegí un día'); return; }
+  const {data,error}=await sb.from('asistencia')
+    .update({hora_salida:hora}).eq('fecha',fecha).is('hora_salida',null).select('id');
+  if(error){ toast('Error al marcar salidas'); console.error(error); return; }
+  const n=(data||[]).length;
+  closeMo('mo-salgen');
+  toast(n? `Salida marcada a ${n} niño(s) ✅` : 'No había niños pendientes');
   await cargarAsistHoy(); renderHoy();
 }
 
@@ -540,7 +835,7 @@ let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
 
 /* cerrar modal tocando el fondo */
-document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('on'); }));
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m){ if(m.id==='mo-nino') _volverIngreso=false; m.classList.remove('on'); } }));
 window.addEventListener('load',()=>document.getElementById('pin').focus());
 
 /* ================= INSTALAR APP (PWA) ================= */
