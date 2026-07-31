@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Manitos de la Mater · Apostolado Infantil</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
@@ -167,6 +170,13 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 .dia-stat{flex:1;background:var(--blanco);border:1px solid var(--brd);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--sombra)}
 .dia-stat b{display:block;font-family:var(--disp);font-size:22px;color:var(--navy);line-height:1.1}
 .dia-stat span{font-size:11px;color:var(--t2);font-weight:700}
+
+/* ---------- Edad calculada ---------- */
+.edad-live{font-size:13.5px;font-weight:800;color:var(--verde);margin-top:6px;display:none}
+
+/* ---------- Fila de exportación ---------- */
+.exp-row{display:flex;gap:8px;margin-bottom:12px}
+.exp-row .btn{flex:1;justify-content:center}
 </style>
 </head>
 <body>
@@ -219,6 +229,10 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
         <input type="date" id="dia-fecha" class="search" oninput="renderDia()">
         <button class="btn gris sm" onclick="diaHoy()">Hoy</button>
       </div>
+      <div class="exp-row">
+        <button class="btn rojo" onclick="expDiaPDF()">📄 PDF</button>
+        <button class="btn verde" onclick="expDiaXLS()">📊 Excel</button>
+      </div>
       <div id="dia-stats"></div>
       <div id="dia-lista"><div class="loading">Elegí un día…</div></div>
     </section>
@@ -228,6 +242,10 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <div class="row-tools">
         <input class="search" id="buscarNino" placeholder="🔎 Buscar niño…" oninput="renderNinos()">
         <button class="btn" onclick="openNino()">➕ Nuevo</button>
+      </div>
+      <div class="exp-row">
+        <button class="btn rojo" onclick="expNinosPDF()">📄 PDF</button>
+        <button class="btn verde" onclick="expNinosXLS()">📊 Excel</button>
       </div>
       <div id="listNinos"><div class="loading">Cargando…</div></div>
     </section>
@@ -264,11 +282,10 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <label>Teléfono de contacto *</label>
       <input id="n-tel" type="tel" inputmode="tel" placeholder="Ej: 0981 123 456">
     </div>
-    <div class="fg2">
-      <div class="fld">
-        <label>Fecha de cumpleaños</label>
-        <input id="n-cumple" type="date">
-      </div>
+    <div class="fld">
+      <label>Fecha de cumpleaños</label>
+      <input id="n-cumple" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="fmtCumpleInput(this);calcEdadLive()">
+      <div id="n-edad" class="edad-live"></div>
     </div>
     <div class="fld">
       <label>Comida especial / alergias / notas</label>
@@ -288,8 +305,8 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
     <h2>➕ Registrar ingreso</h2>
     <div class="fld">
       <label>Buscar niño *</label>
-      <input id="i-buscar" class="search" placeholder="🔎 Escribí el nombre…" oninput="filtrarIngreso()" autocomplete="off">
-      <div id="i-lista" class="pick-list"></div>
+      <input id="i-buscar" class="search" placeholder="🔎 Tocá y escribí el nombre…" oninput="ingFocus=true;filtrarIngreso()" onfocus="ingFocus=true;filtrarIngreso()" autocomplete="off">
+      <div id="i-lista" class="pick-list" style="display:none"></div>
     </div>
     <button class="btn gris sm" style="margin-bottom:14px;width:100%;justify-content:center" onclick="nuevoNinoDesdeIngreso()">➕ El niño no está — registrarlo ahora</button>
     <div class="fg2">
@@ -610,7 +627,7 @@ function openNino(id){
     document.getElementById('n-nombre').value=n.nombre_completo||'';
     document.getElementById('n-tutor').value=n.tutor_nombre||'';
     document.getElementById('n-tel').value=n.telefono||'';
-    document.getElementById('n-cumple').value=n.cumpleanos||'';
+    document.getElementById('n-cumple').value=n.cumpleanos?fmtFecha(n.cumpleanos):'';
     document.getElementById('n-alim').value=n.alimento_especial||'';
     del.style.display='inline-flex';
   }else{
@@ -618,16 +635,42 @@ function openNino(id){
     ['n-id','n-nombre','n-tutor','n-tel','n-cumple','n-alim'].forEach(i=>document.getElementById(i).value='');
     del.style.display='none';
   }
+  calcEdadLive();
   openMo('mo-nino');
+}
+// Auto-formatea dd/mm/aaaa mientras se escribe
+function fmtCumpleInput(el){
+  let v=el.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>=5) v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+  else if(v.length>=3) v=v.slice(0,2)+'/'+v.slice(2);
+  el.value=v;
+}
+// dd/mm/aaaa -> ISO (o null si inválida)
+function parseFechaLibre(s){
+  s=(s||'').trim(); if(!s) return null;
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(!m) return null;
+  const d=+m[1], mo=+m[2], y=+m[3];
+  if(mo<1||mo>12||d<1||d>31||y<1900||y>2100) return null;
+  const iso=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const dt=new Date(iso+'T00:00:00'); if(isNaN(dt.getTime())||dt.getUTCDate()!==d) return null;
+  return iso;
+}
+function calcEdadLive(){
+  const iso=parseFechaLibre(val('n-cumple')); const e=document.getElementById('n-edad');
+  if(iso){ e.textContent='🎂 Edad: '+edad(iso)+' años'; e.style.display='block'; }
+  else { e.textContent=''; e.style.display='none'; }
 }
 function cancelNino(){ _volverIngreso=false; closeMo('mo-nino'); }
 
 async function saveNino(){
+  const cumpleTxt=val('n-cumple').trim();
+  const cumpleISO=parseFechaLibre(cumpleTxt);
+  if(cumpleTxt && !cumpleISO){ toast('Cumpleaños inválido. Usá dd/mm/aaaa'); return; }
   const rec={
     nombre_completo: val('n-nombre').trim(),
     tutor_nombre:    val('n-tutor').trim(),
     telefono:        val('n-tel').trim(),
-    cumpleanos:      val('n-cumple')||null,
+    cumpleanos:      cumpleISO,
     alimento_especial: val('n-alim').trim()
   };
   if(!rec.nombre_completo || !rec.tutor_nombre || !rec.telefono){
@@ -654,31 +697,40 @@ async function delNino(){
 
 /* ================= MODAL INGRESO ================= */
 let ingSel=null;          // id del niño seleccionado en el ingreso
+let ingFocus=false;       // solo mostrar la lista cuando el selector está activo
 let _volverIngreso=false; // volver al ingreso tras registrar un niño nuevo
 
 function openIngreso(preId){
   ingSel = preId || null;
-  document.getElementById('i-buscar').value='';
+  ingFocus = false;
+  const inp=document.getElementById('i-buscar');
+  inp.value = preId ? ((NINOS.find(n=>n.id===preId)||{}).nombre_completo||'') : '';
+  const cont=document.getElementById('i-lista'); cont.style.display='none'; cont.innerHTML='';
   document.getElementById('i-entrada').value=ahoraHM();
   document.getElementById('i-nota').value='';
-  filtrarIngreso();
   openMo('mo-ing');
 }
 
 function filtrarIngreso(){
+  const cont=document.getElementById('i-lista');
+  if(!ingFocus){ cont.style.display='none'; return; }   // no aparece nada hasta entrar al selector
   const q=(document.getElementById('i-buscar').value||'').toLowerCase();
   const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
   const list=NINOS.filter(n=>n.nombre_completo.toLowerCase().includes(q)||(n.tutor_nombre||'').toLowerCase().includes(q));
-  const cont=document.getElementById('i-lista');
-  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados. Tocá “registrarlo ahora”.</div>'; return; }
-  if(!list.length){ cont.innerHTML='<div class="pick-empty">Sin resultados. Tocá “registrarlo ahora”.</div>'; return; }
+  cont.style.display='block';
+  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados. Tocá "registrarlo ahora".</div>'; return; }
+  if(!list.length){ cont.innerHTML='<div class="pick-empty">Sin resultados. Tocá "registrarlo ahora".</div>'; return; }
   cont.innerHTML=list.slice(0,40).map(n=>
     `<button type="button" class="pick-item${ingSel===n.id?' sel':''}" onclick="selIngreso('${n.id}')">`+
       `<span>${esc(n.nombre_completo)}${yaHoy.has(n.id)?'<span class="pick-tag">ya ingresó</span>':''}</span>`+
       `${ingSel===n.id?'<span class="pick-check">✓</span>':''}`+
     `</button>`).join('');
 }
-function selIngreso(id){ ingSel=id; filtrarIngreso(); }
+function selIngreso(id){
+  ingSel=id; ingFocus=false;
+  document.getElementById('i-buscar').value=((NINOS.find(n=>n.id===id)||{}).nombre_completo||'');
+  document.getElementById('i-lista').style.display='none';
+}
 
 function nuevoNinoDesdeIngreso(){
   _volverIngreso=true;
@@ -833,6 +885,73 @@ function waLink(tel,msg){ const n=waNum(tel); return n?`https://wa.me/${n}${msg?
 function edad(iso){ const b=new Date(iso), h=new Date(); let a=h.getFullYear()-b.getFullYear(); const mm=h.getMonth()-b.getMonth(); if(mm<0||(mm===0&&h.getDate()<b.getDate()))a--; return a; }
 let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ================= EXPORTAR (PDF con logo + Excel) ================= */
+let _logoData=null;
+async function getLogo(){
+  if(_logoData!==null) return _logoData;
+  try{
+    const r=await fetch('icon-192.png'); const b=await r.blob();   // ícono liviano para el header del PDF
+    _logoData=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(b); });
+  }catch(e){ _logoData=''; }
+  return _logoData;
+}
+async function pdfDoc(titulo, subtitulo){
+  if(!window.jspdf){ toast('Cargando PDF… reintentá'); return null; }
+  const { jsPDF } = window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const logo=await getLogo();
+  if(logo){ try{ doc.addImage(logo,'PNG',40,26,50,50); }catch(e){} }
+  doc.setFont('helvetica','bold'); doc.setTextColor(37,80,126); doc.setFontSize(15);
+  doc.text('Manitos de la Mater', 100, 48);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,107,125);
+  doc.text('Apostolado Infantil', 100, 63);
+  doc.setDrawColor(198,219,238); doc.line(40, 84, doc.internal.pageSize.getWidth()-40, 84);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(37,80,126);
+  doc.text(titulo, 40, 108);
+  if(subtitulo){ doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(90,107,125); doc.text(subtitulo, 40, 123); }
+  return doc;
+}
+function tabla(doc, head, body){
+  doc.autoTable({ startY:134, head:[head], body, styles:{fontSize:8.5,cellPadding:4}, headStyles:{fillColor:[37,80,126],textColor:255}, alternateRowStyles:{fillColor:[241,246,252]}, margin:{left:40,right:40} });
+}
+async function expDiaPDF(){
+  const fecha=val('dia-fecha')||hoyISO();
+  const {data,error}=await sb.from('asistencia').select('*, ninos(nombre_completo,tutor_nombre)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ toast('Error'); return; }
+  if(!data||!data.length){ toast('Sin registros ese día'); return; }
+  const doc=await pdfDoc('Asistencia por día','Fecha: '+fmtFecha(fecha)+'  ·  '+data.length+' niño(s)'); if(!doc) return;
+  const body=data.map(a=>[ (a.ninos&&a.ninos.nombre_completo)||'', a.hora_entrada?a.hora_entrada.slice(0,5):'—', a.hora_salida?a.hora_salida.slice(0,5):'—', a.retirado_por||'', a.nota||'', a.nota_salida||'' ]);
+  tabla(doc,['Niño','Entrada','Salida','Retiró','Nota','Nota salida'],body);
+  doc.save('asistencia_'+fecha+'.pdf');
+}
+function expDiaXLS(){ _expDiaXLS(); }
+async function _expDiaXLS(){
+  const fecha=val('dia-fecha')||hoyISO();
+  const {data,error}=await sb.from('asistencia').select('*, ninos(nombre_completo,tutor_nombre)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ toast('Error'); return; }
+  if(!data||!data.length){ toast('Sin registros ese día'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=data.map(a=>({ Niño:(a.ninos&&a.ninos.nombre_completo)||'', Tutor:(a.ninos&&a.ninos.tutor_nombre)||'', Entrada:a.hora_entrada?a.hora_entrada.slice(0,5):'', Salida:a.hora_salida?a.hora_salida.slice(0,5):'', 'Retiró':a.retirado_por||'', Nota:a.nota||'', 'Nota salida':a.nota_salida||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Asistencia');
+  XLSX.writeFile(wb,'asistencia_'+fecha+'.xlsx');
+}
+async function expNinosPDF(){
+  if(!NINOS.length){ toast('No hay niños'); return; }
+  const doc=await pdfDoc('Lista de niños',NINOS.length+' niños  ·  '+fmtFecha(hoyISO())); if(!doc) return;
+  const body=NINOS.map(n=>[ n.nombre_completo, n.tutor_nombre||'', n.telefono||'', n.cumpleanos?fmtFecha(n.cumpleanos):'', n.cumpleanos?(edad(n.cumpleanos)+' años'):'', n.alimento_especial||'' ]);
+  tabla(doc,['Niño','Tutor','Teléfono','Cumpleaños','Edad','Comida especial'],body);
+  doc.save('ninos.pdf');
+}
+function expNinosXLS(){
+  if(!NINOS.length){ toast('No hay niños'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=NINOS.map(n=>({ Niño:n.nombre_completo, Tutor:n.tutor_nombre||'', 'Teléfono':n.telefono||'', 'Cumpleaños':n.cumpleanos?fmtFecha(n.cumpleanos):'', Edad:n.cumpleanos?edad(n.cumpleanos):'', 'Comida especial':n.alimento_especial||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Niños');
+  XLSX.writeFile(wb,'ninos.xlsx');
+}
 
 /* cerrar modal tocando el fondo */
 document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m){ if(m.id==='mo-nino') _volverIngreso=false; m.classList.remove('on'); } }));
