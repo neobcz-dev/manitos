@@ -44,13 +44,13 @@ button{font-family:inherit;cursor:pointer}
 input,select,textarea{font-family:inherit;font-size:16px}
 
 /* ---------- PIN gate ---------- */
-#gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--azul-cl),var(--crema));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
-.gate-box{background:var(--blanco);border-radius:22px;box-shadow:var(--sombra);padding:34px 26px;max-width:360px;width:100%;text-align:center;border:1px solid var(--brd)}
+#gate{position:fixed;inset:0;background:var(--crema);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.gate-box{background:var(--crema);border-radius:22px;box-shadow:var(--sombra);padding:34px 26px;max-width:360px;width:100%;text-align:center;border:1px solid var(--brd)}
 .gate-logo{font-size:44px;line-height:1}
 .gate-logo-img{width:190px;max-width:72%;height:auto;display:block;margin:0 auto 10px}
 .gate-box h1{color:var(--navy);font-size:22px;margin:12px 0 2px;font-weight:800;letter-spacing:.3px}
 .gate-box p{color:var(--t2);font-size:13px;margin:0 0 20px}
-#pin{width:100%;text-align:center;font-size:30px;letter-spacing:12px;padding:12px;border:2px solid var(--brd2);border-radius:14px;background:var(--crema);color:var(--navy);font-weight:700;margin-bottom:14px}
+#pin{width:100%;text-align:center;font-size:30px;letter-spacing:12px;padding:12px;border:2px solid var(--brd2);border-radius:14px;background:var(--blanco);color:var(--navy);font-weight:700;margin-bottom:14px}
 #pin:focus{outline:none;border-color:var(--azul)}
 .gate-err{color:var(--rojo);font-size:13px;height:16px;margin-bottom:8px}
 
@@ -184,9 +184,9 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 <!-- ============ PIN GATE ============ -->
 <div id="gate">
   <div class="gate-box">
-    <img class="gate-logo-img" src="logo.png" alt="Manitos de la Mater · Apostolado Infantil">
+    <img class="gate-logo-img" src="logo-trans.png" alt="Manitos de la Mater · Apostolado Infantil">
     <p>Ingresá el PIN de acceso</p>
-    <input id="pin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="off">
     <div class="gate-err" id="pinErr"></div>
     <button class="btn block" onclick="checkPin()">Entrar</button>
   </div>
@@ -382,6 +382,8 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
     <div id="histBody"><div class="loading">Cargando…</div></div>
     <div class="mo-actions" style="margin-top:12px">
       <button class="btn gris" onclick="closeMo('mo-hist')">Cerrar</button>
+      <button class="btn verde" onclick="expHistXLS()">📊 Excel</button>
+      <button class="btn rojo" onclick="expHistPDF()">📄 PDF</button>
     </div>
   </div>
 </div>
@@ -757,6 +759,7 @@ async function verHistorial(id){
   const {data,error}=await sb.from('asistencia')
     .select('fecha,hora_entrada,hora_salida,nota,nota_salida,retirado_por').eq('nino_id',id).order('fecha',{ascending:false});
   const body=document.getElementById('histBody');
+  _histData=data||[]; _histNombre=n?n.nombre_completo:'';
   if(error){ body.innerHTML='<div class="empty">Error al cargar el historial.</div>'; console.error(error); return; }
   if(!data||!data.length){ body.innerHTML='<div class="empty"><span class="big">📭</span>Sin registros de asistencia todavía.</div>'; return; }
   body.innerHTML=`<div class="hd">${data.length} día(s) registrados</div>`+data.map(a=>
@@ -766,6 +769,23 @@ async function verHistorial(id){
       `${a.nota?`<div class="hist-n">📝 ${esc(a.nota)}</div>`:''}`+
       `${a.nota_salida?`<div class="hist-n">🚪📝 ${esc(a.nota_salida)}</div>`:''}`+
     `</div>`).join('');
+}
+
+let _histData=[], _histNombre='';
+async function expHistPDF(){
+  if(!_histData||!_histData.length){ toast('Sin registros para exportar'); return; }
+  const doc=await pdfDoc('Historial de asistencia', _histNombre+'  ·  '+_histData.length+' día(s)'); if(!doc) return;
+  const body=_histData.map(a=>[ fmtFecha(a.fecha), a.hora_entrada?a.hora_entrada.slice(0,5):'-', a.hora_salida?a.hora_salida.slice(0,5):'-', a.retirado_por||'', a.nota||'', a.nota_salida||'' ]);
+  tabla(doc,['Fecha','Entrada','Salida','Retiró','Nota del día','Nota salida'],body);
+  doc.save('historial_'+(_histNombre||'nino').replace(/\s+/g,'_')+'.pdf');
+}
+function expHistXLS(){
+  if(!_histData||!_histData.length){ toast('Sin registros para exportar'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=_histData.map(a=>({ Fecha:fmtFecha(a.fecha), Entrada:a.hora_entrada?a.hora_entrada.slice(0,5):'', Salida:a.hora_salida?a.hora_salida.slice(0,5):'', 'Retiró':a.retirado_por||'', 'Nota del día':a.nota||'', 'Nota salida':a.nota_salida||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Historial');
+  XLSX.writeFile(wb,'historial_'+(_histNombre||'nino').replace(/\s+/g,'_')+'.xlsx');
 }
 
 async function marcarSalida(id){
