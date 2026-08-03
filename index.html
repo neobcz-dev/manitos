@@ -177,6 +177,20 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 /* ---------- Fila de exportación ---------- */
 .exp-row{display:flex;gap:8px;margin-bottom:12px}
 .exp-row .btn{flex:1;justify-content:center}
+
+/* ---------- Contactos (form) ---------- */
+.cto-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.cto-row .cto-rel{flex:0 0 96px;padding:9px 6px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco);color:var(--t);font-size:13px}
+.cto-row .cto-nom{flex:1;min-width:0;padding:9px 8px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco)}
+.cto-row .cto-tel{flex:0 0 108px;padding:9px 8px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco)}
+.cto-row .cto-del{flex:0 0 auto;border:none;background:var(--crema2);color:var(--rojo);border-radius:9px;padding:9px 11px;font-weight:800}
+/* ---------- Contactos (tarjeta) ---------- */
+.cto-mini{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:13px;color:var(--t2)}
+.cto-mini span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- Aviso de duplicados ---------- */
+.dup-banner{background:#f7dede;border:1px solid var(--rojo);color:var(--rojo2);border-radius:12px;padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.4}
+.card-dup{border-color:var(--rojo);border-width:2px}
 </style>
 </head>
 <body>
@@ -279,8 +293,13 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <input id="n-tutor" placeholder="Ej: María López">
     </div>
     <div class="fld">
-      <label>Teléfono de contacto *</label>
+      <label>Teléfono principal *</label>
       <input id="n-tel" type="tel" inputmode="tel" placeholder="Ej: 0981 123 456">
+    </div>
+    <div class="fld">
+      <label>Otros contactos (mamá, papá, abuelos…)</label>
+      <div id="n-contactos"></div>
+      <button type="button" class="btn gris sm" style="margin-top:6px;width:100%;justify-content:center" onclick="addContactoRow()">➕ Agregar contacto</button>
     </div>
     <div class="fld">
       <label>Fecha de cumpleaños</label>
@@ -531,10 +550,20 @@ function renderNinos(){
     return;
   }
   if(!list.length){ cont.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
-  cont.innerHTML = list.map(n=>{
+  // detectar nombres duplicados (sobre TODOS los niños, no solo el filtro)
+  const cuenta={};
+  NINOS.forEach(n=>{ const k=nomNorm(n.nombre_completo); cuenta[k]=(cuenta[k]||0)+1; });
+  const duplicados=Object.keys(cuenta).filter(k=>cuenta[k]>1);
+  let banner='';
+  if(duplicados.length){
+    const nombres=[...new Set(NINOS.filter(n=>cuenta[nomNorm(n.nombre_completo)]>1).map(n=>n.nombre_completo))];
+    banner=`<div class="dup-banner">⚠️ <b>${duplicados.length} nombre(s) duplicado(s):</b> ${esc(nombres.join(', '))}. Revisá y eliminá el repetido (✏ Editar → 🗑).</div>`;
+  }
+  cont.innerHTML = banner + list.map(n=>{
     const tel=(n.telefono||'').replace(/\s/g,'');
-    return `<div class="card">
-      <div class="nom">${esc(n.nombre_completo)}</div>
+    const esDup=cuenta[nomNorm(n.nombre_completo)]>1;
+    return `<div class="card${esDup?' card-dup':''}">
+      <div class="nom">${esc(n.nombre_completo)}${esDup?' <span class="pill rojo">⚠️ duplicado</span>':''}</div>
       <div class="sub">👤 ${esc(n.tutor_nombre)}</div>
       <div class="meta">
         ${n.telefono?`<span class="pill">📞 ${esc(n.telefono)}</span>`:''}
@@ -547,7 +576,21 @@ function renderNinos(){
         <button class="btn gris sm" onclick="verHistorial('${n.id}')">📅 Historial</button>
         <button class="btn gris sm" onclick="openNino('${n.id}')">✏ Editar</button>
       </div>
+      ${contactosMiniHTML(n)}
     </div>`;
+  }).join('');
+}
+// Contactos adicionales en la tarjeta (📞 / 💬 por cada uno)
+function contactosMiniHTML(n){
+  const cs=(Array.isArray(n.contactos)?n.contactos:[]).filter(c=>c && (c.tel||c.nombre));
+  if(!cs.length) return '';
+  return cs.map(c=>{
+    const t=(c.tel||'').replace(/\s/g,'');
+    const etq=[c.rel,c.nombre].filter(Boolean).join(' — ')||'Contacto';
+    return `<div class="cto-mini"><span>👥 ${esc(etq)}${c.tel?' · '+esc(c.tel):''}</span>`+
+      (t?`<a class="btn verde sm" href="tel:${esc(t)}">📞</a>`+
+          `<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(c.tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬</a>`:'')+
+      `</div>`;
   }).join('');
 }
 
@@ -631,10 +674,13 @@ function openNino(id){
     document.getElementById('n-tel').value=n.telefono||'';
     document.getElementById('n-cumple').value=n.cumpleanos?fmtFecha(n.cumpleanos):'';
     document.getElementById('n-alim').value=n.alimento_especial||'';
+    document.getElementById('n-contactos').innerHTML='';
+    (Array.isArray(n.contactos)?n.contactos:[]).forEach(c=>addContactoRow(c));
     del.style.display='inline-flex';
   }else{
     document.getElementById('moNinoTtl').textContent='👶 Nuevo niño';
     ['n-id','n-nombre','n-tutor','n-tel','n-cumple','n-alim'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('n-contactos').innerHTML='';
     del.style.display='none';
   }
   calcEdadLive();
@@ -664,6 +710,30 @@ function calcEdadLive(){
 }
 function cancelNino(){ _volverIngreso=false; closeMo('mo-nino'); }
 
+// ---- Contactos adicionales (form) ----
+const CTO_RELS=['Mamá','Papá','Abuelo/a','Tío/a','Hermano/a','Otro'];
+function addContactoRow(c){
+  c=c||{};
+  const wrap=document.getElementById('n-contactos');
+  const div=document.createElement('div');
+  div.className='cto-row';
+  div.innerHTML=
+    '<select class="cto-rel"><option value="">Relación</option>'+
+      CTO_RELS.map(r=>`<option${c.rel===r?' selected':''}>${r}</option>`).join('')+
+    '</select>'+
+    `<input class="cto-nom" placeholder="Nombre" value="${esc(c.nombre||'')}">`+
+    `<input class="cto-tel" type="tel" inputmode="tel" placeholder="Teléfono" value="${esc(c.tel||'')}">`+
+    '<button type="button" class="cto-del" onclick="this.parentElement.remove()">✕</button>';
+  wrap.appendChild(div);
+}
+function collectContactos(){
+  return [...document.querySelectorAll('#n-contactos .cto-row')].map(r=>({
+    rel: r.querySelector('.cto-rel').value.trim(),
+    nombre: r.querySelector('.cto-nom').value.trim(),
+    tel: r.querySelector('.cto-tel').value.trim()
+  })).filter(c=>c.nombre||c.tel);
+}
+
 async function saveNino(){
   const cumpleTxt=val('n-cumple').trim();
   const cumpleISO=parseFechaLibre(cumpleTxt);
@@ -673,12 +743,16 @@ async function saveNino(){
     tutor_nombre:    val('n-tutor').trim(),
     telefono:        val('n-tel').trim(),
     cumpleanos:      cumpleISO,
-    alimento_especial: val('n-alim').trim()
+    alimento_especial: val('n-alim').trim(),
+    contactos:       collectContactos()
   };
   if(!rec.nombre_completo || !rec.tutor_nombre || !rec.telefono){
     toast('Completá nombre, tutor y teléfono'); return;
   }
   const id=val('n-id');
+  // aviso de nombre duplicado
+  const dup=NINOS.find(n=>n.id!==id && nomNorm(n.nombre_completo)===nomNorm(rec.nombre_completo));
+  if(dup && !confirm(`⚠️ Ya existe un niño con el nombre "${rec.nombre_completo}" (tutor: ${dup.tutor_nombre||'—'}).\n\n¿Quizás es el mismo y solo cambia el contacto? Podés agregar el otro contacto en su ficha en vez de duplicarlo.\n\n¿Guardar igual?`)) return;
   let error, nuevoId=null;
   if(id){ ({error}=await sb.from('ninos').update(rec).eq('id',id)); }
   else  { const r=await sb.from('ninos').insert(rec).select('id').single(); error=r.error; nuevoId=r.data?.id; }
@@ -893,6 +967,7 @@ function closeMo(id){ document.getElementById(id).classList.remove('on'); }
 function val(id){ return document.getElementById(id).value; }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtFecha(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function nomNorm(s){ return (s||'').trim().toLowerCase().replace(/\s+/g,' '); }
 // Normaliza teléfono paraguayo a formato internacional para WhatsApp (wa.me): 0981... -> 595981...
 function waNum(tel){
   let d=(tel||'').replace(/\D/g,'');
