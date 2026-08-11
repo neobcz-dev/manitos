@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Manitos de la Mater · Apostolado Infantil</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- PWA / instalable -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#25507e">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Manitos">
+<style>
+:root{
+  --crema:#f6f1e4; --crema2:#efe7d4;
+  --navy:#25507e; --navy2:#1c3e63;
+  --azul:#7cb1de; --azul-cl:#d7e8f6;
+  --oro:#e8c157; --oro-cl:#f6e9bf;
+  --rojo:#d24a4a; --rojo2:#b23a3a;
+  --verde:#3a9d6e;
+  --blanco:#ffffff;
+  --t:#243447; --t2:#5a6b7d; --t3:#94a3b2;
+  --brd:#e3dcc9; --brd2:#cfc7b2;
+  --sombra:0 2px 10px rgba(37,80,126,.10);
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --disp:'Fredoka',var(--sans);
+}
+h1,h2,h3,.gate-box h1,#top .ttl,.card .nom,.hd,.tab{font-family:var(--disp)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:var(--sans);background:var(--crema);color:var(--t);font-size:16px;line-height:1.45}
+h1,h2,h3{margin:0}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:16px}
+
+/* ---------- PIN gate ---------- */
+#gate{position:fixed;inset:0;background:var(--crema);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.gate-box{background:var(--crema);border-radius:22px;box-shadow:var(--sombra);padding:34px 26px;max-width:360px;width:100%;text-align:center;border:1px solid var(--brd)}
+.gate-logo{font-size:44px;line-height:1}
+.gate-logo-img{width:190px;max-width:72%;height:auto;display:block;margin:0 auto 10px}
+.gate-box h1{color:var(--navy);font-size:22px;margin:12px 0 2px;font-weight:800;letter-spacing:.3px}
+.gate-box p{color:var(--t2);font-size:13px;margin:0 0 20px}
+#pin{width:100%;text-align:center;font-size:30px;letter-spacing:12px;padding:12px;border:2px solid var(--brd2);border-radius:14px;background:var(--blanco);color:var(--navy);font-weight:700;margin-bottom:14px}
+#pin:focus{outline:none;border-color:var(--azul)}
+.gate-err{color:var(--rojo);font-size:13px;height:16px;margin-bottom:8px}
+
+/* ---------- Topbar ---------- */
+#top{background:var(--navy);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#top .logo{font-size:24px}
+#top .logo-img{width:36px;height:36px;border-radius:9px;object-fit:cover;background:#fff;flex:0 0 auto}
+#top .ttl{font-weight:800;font-size:16px;letter-spacing:.3px;line-height:1.1}
+#top .ttl small{display:block;font-weight:500;font-size:10px;opacity:.75;letter-spacing:.5px}
+#top .sp{flex:1}
+#top .hoy{font-size:12px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:20px;white-space:nowrap}
+
+/* ---------- Tabs ---------- */
+#tabs{display:flex;background:var(--crema2);border-bottom:1px solid var(--brd);position:sticky;top:52px;z-index:20}
+.tab{flex:1;border:none;background:none;padding:12px 4px;font-size:12.5px;font-weight:700;color:var(--t2);border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab .ic{font-size:19px}
+.tab.on{color:var(--navy);border-bottom-color:var(--oro);background:var(--blanco)}
+
+/* ---------- Layout ---------- */
+main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
+.sc{display:none}.sc.on{display:block}
+
+.row-tools{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search{flex:1;padding:11px 14px;border:1px solid var(--brd2);border-radius:12px;background:var(--blanco);color:var(--t)}
+.search:focus{outline:none;border-color:var(--azul)}
+
+.btn{border:none;border-radius:12px;padding:11px 16px;font-size:14.5px;font-weight:700;color:#fff;background:var(--navy);display:inline-flex;align-items:center;gap:7px;box-shadow:var(--sombra)}
+.btn.oro{background:var(--oro);color:var(--navy2)}
+.btn.rojo{background:var(--rojo)}
+.btn.verde{background:var(--verde)}
+.btn.wa{background:#22a45b}
+.btn.gris{background:#fff;color:var(--navy);border:1px solid var(--brd2);box-shadow:none}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
+.btn.block{width:100%;justify-content:center;padding:14px}
+.btn:active{transform:translateY(1px)}
+
+/* ---------- Cards ---------- */
+.card{background:var(--blanco);border:1px solid var(--brd);border-radius:16px;padding:14px;margin-bottom:11px;box-shadow:var(--sombra)}
+.card .nom{font-weight:800;color:var(--navy);font-size:16px}
+.card .sub{color:var(--t2);font-size:13px;margin-top:2px}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--azul-cl);color:var(--navy2);display:inline-flex;align-items:center;gap:4px}
+.pill.oro{background:var(--oro-cl);color:#8a6d16}
+.pill.rojo{background:#f7dede;color:var(--rojo2)}
+.pill.verde{background:#d9f0e4;color:#1f6b48}
+.pill.gris{background:var(--crema2);color:var(--t2)}
+.card-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.card-actions .btn{flex:1;min-width:110px;justify-content:center}
+
+.hd{font-size:13px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin:18px 2px 8px}
+.empty{text-align:center;color:var(--t3);padding:34px 10px;font-size:14px}
+.empty .big{font-size:38px;display:block;margin-bottom:8px}
+
+/* ---------- Modal ---------- */
+.mo{position:fixed;inset:0;background:rgba(28,44,62,.5);display:none;align-items:flex-end;justify-content:center;z-index:50;padding:0}
+.mo.on{display:flex}
+.mbox{background:var(--crema);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:92vh;overflow:auto;box-shadow:0 -6px 24px rgba(0,0,0,.2)}
+@media(min-width:560px){.mo{align-items:center}.mbox{border-radius:20px}}
+.mbox h2{color:var(--navy);font-size:19px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12.5px;font-weight:700;color:var(--t2);margin-bottom:5px}
+.fld input,.fld select,.fld textarea{width:100%;padding:11px 12px;border:1px solid var(--brd2);border-radius:11px;background:var(--blanco);color:var(--t)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--azul)}
+.fld textarea{resize:vertical;min-height:56px}
+.fg2{display:flex;gap:10px}.fg2>*{flex:1}
+.mo-actions{display:flex;gap:10px;margin-top:8px}
+.mo-actions .btn{flex:1;justify-content:center;padding:13px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy2);color:#fff;padding:11px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:200;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+.loading{text-align:center;color:var(--t3);padding:30px;font-size:14px}
+
+/* ---------- Barra instalar app ---------- */
+#installBar{display:none;align-items:center;gap:10px;background:var(--oro-cl);border-bottom:1px solid var(--brd2);padding:9px 14px;font-size:13px;font-weight:700;color:#8a6d16}
+#installBar .sp{flex:1}
+.ios-steps{list-style:none;padding:0;margin:0}
+.ios-steps li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--brd);font-size:14px;color:var(--t)}
+.ios-steps li:last-child{border-bottom:none}
+.ios-steps .n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* ---------- Picker de niño (ingreso) ---------- */
+.pick-list{margin-top:8px;max-height:220px;overflow:auto;border:1px solid var(--brd);border-radius:11px;background:var(--blanco)}
+.pick-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:none;background:none;padding:11px 12px;font-size:14.5px;color:var(--t);border-bottom:1px solid var(--brd)}
+.pick-item:last-child{border-bottom:none}
+.pick-item.sel{background:var(--azul-cl);color:var(--navy2);font-weight:700}
+.pick-item .pick-tag{font-size:11px;font-weight:700;color:#8a6d16;background:var(--oro-cl);padding:2px 7px;border-radius:12px;margin-left:6px}
+.pick-item .pick-check{color:var(--verde);font-weight:800}
+.pick-empty{padding:16px;text-align:center;color:var(--t3);font-size:13px}
+
+/* ---------- Calendario ---------- */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cal-titulo{font-family:var(--disp);font-weight:700;color:var(--navy);font-size:16px;text-transform:capitalize}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{text-align:center;font-size:11px;font-weight:800;color:var(--t3);padding:4px 0}
+.cal-cell{position:relative;min-width:0;aspect-ratio:1;border-radius:9px;background:var(--bg2,#e2edf8);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:var(--t2)}
+.cal-cell.empty{background:transparent}
+.cal-cell.hoy{outline:2px solid var(--azul)}
+.cal-cell.bday{background:var(--oro-cl);color:#8a6d16;font-weight:800;cursor:pointer}
+.cal-cell .cal-dot{font-size:12px;line-height:1;margin-top:1px}
+
+/* ---------- Historial ---------- */
+.hist-row{background:var(--blanco);border:1px solid var(--brd);border-radius:11px;padding:10px 12px;margin-bottom:8px}
+.hist-f{font-weight:800;color:var(--navy);font-size:14px}
+.hist-h{font-size:13px;color:var(--t2);margin-top:2px}
+.hist-n{font-size:13px;color:var(--t);margin-top:5px;background:var(--crema2);padding:6px 9px;border-radius:8px}
+.sg-info{font-size:13px;font-weight:600;color:var(--navy2);background:var(--azul-cl);padding:10px 12px;border-radius:10px;margin-bottom:14px}
+
+/* ---------- Chips "quién retiró" ---------- */
+.quick-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.quick-chip{border:1px solid var(--brd2);background:var(--blanco);color:var(--navy);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
+.quick-chip:active{background:var(--azul-cl)}
+
+/* ---------- Stats por día ---------- */
+#dia-stats{display:flex;gap:8px;margin-bottom:12px}
+#dia-stats:empty{display:none}
+.dia-stat{flex:1;background:var(--blanco);border:1px solid var(--brd);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--sombra)}
+.dia-stat b{display:block;font-family:var(--disp);font-size:22px;color:var(--navy);line-height:1.1}
+.dia-stat span{font-size:11px;color:var(--t2);font-weight:700}
+
+/* ---------- Edad calculada ---------- */
+.edad-live{font-size:13.5px;font-weight:800;color:var(--verde);margin-top:6px;display:none}
+
+/* ---------- Fila de exportación ---------- */
+.exp-row{display:flex;gap:8px;margin-bottom:12px}
+.exp-row .btn{flex:1;justify-content:center}
+
+/* ---------- Contactos (form) ---------- */
+.cto-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.cto-row .cto-rel{flex:0 0 96px;padding:9px 6px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco);color:var(--t);font-size:13px}
+.cto-row .cto-nom{flex:1;min-width:0;padding:9px 8px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco)}
+.cto-row .cto-tel{flex:0 0 108px;padding:9px 8px;border:1px solid var(--brd2);border-radius:9px;background:var(--blanco)}
+.cto-row .cto-del{flex:0 0 auto;border:none;background:var(--crema2);color:var(--rojo);border-radius:9px;padding:9px 11px;font-weight:800}
+/* ---------- Contactos (tarjeta) ---------- */
+.cto-mini{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:13px;color:var(--t2)}
+.cto-mini span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- Aviso de duplicados ---------- */
+.dup-banner{background:#f7dede;border:1px solid var(--rojo);color:var(--rojo2);border-radius:12px;padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.4}
+.al-hint{background:var(--azul-cl);border:1px solid var(--brd2);color:var(--navy2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:12px}
+.card-dup{border-color:var(--rojo);border-width:2px}
+</style>
+</head>
+<body>
+
+<!-- ============ PIN GATE ============ -->
+<div id="gate">
+  <div class="gate-box">
+    <img class="gate-logo-img" src="logo-trans.png" alt="Manitos de la Mater · Apostolado Infantil">
+    <p>Ingresá el PIN de acceso</p>
+    <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="off">
+    <div class="gate-err" id="pinErr"></div>
+    <button class="btn block" onclick="checkPin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" style="display:none">
+  <div id="top">
+    <img class="logo-img" src="logo.png" alt="Manitos de la Mater">
+    <div class="ttl">Manitos de la Mater<small>APOSTOLADO INFANTIL</small></div>
+    <div class="sp"></div>
+    <div class="hoy" id="fechaHoy"></div>
+  </div>
+
+  <div id="installBar">
+    <span>📲 Instalá Manitos como app en tu celular</span>
+    <span class="sp"></span>
+    <button class="btn oro sm" onclick="instalarApp()">Instalar</button>
+    <button class="btn gris sm" onclick="ocultarInstall()">Ahora no</button>
+  </div>
+
+  <div id="tabs">
+    <button class="tab on" data-sc="hoy" onclick="go('hoy')"><span class="ic">📋</span>Hoy</button>
+    <button class="tab" data-sc="dia" onclick="go('dia')"><span class="ic">📆</span>Por día</button>
+    <button class="tab" data-sc="ninos" onclick="go('ninos')"><span class="ic">👶</span>Niños</button>
+    <button class="tab" data-sc="cumple" onclick="go('cumple')"><span class="ic">🎂</span>Cumple</button>
+  </div>
+
+  <main>
+    <!-- ---- HOY ---- -->
+    <section class="sc on" id="sc-hoy">
+      <button class="btn oro block" style="margin-bottom:9px" onclick="openIngreso()">➕ Registrar ingreso</button>
+      <button class="btn block" style="margin-bottom:14px" onclick="openSalidaGen()">🚪 Salida general del día</button>
+      <div id="listHoy"><div class="loading">Cargando…</div></div>
+    </section>
+
+    <!-- ---- POR DÍA (historial) ---- -->
+    <section class="sc" id="sc-dia">
+      <div class="row-tools">
+        <input type="date" id="dia-fecha" class="search" oninput="renderDia()">
+        <button class="btn gris sm" onclick="diaHoy()">Hoy</button>
+      </div>
+      <div class="exp-row">
+        <button class="btn rojo" onclick="expDiaPDF()">📄 PDF</button>
+        <button class="btn verde" onclick="expDiaXLS()">📊 Excel</button>
+      </div>
+      <div id="dia-stats"></div>
+      <div id="dia-lista"><div class="loading">Elegí un día…</div></div>
+    </section>
+
+    <!-- ---- NIÑOS ---- -->
+    <section class="sc" id="sc-ninos">
+      <div class="row-tools">
+        <input class="search" id="buscarNino" placeholder="🔎 Buscá el nombre del niño…" oninput="renderNinos()">
+      </div>
+      <div class="exp-row">
+        <button class="btn rojo" onclick="expNinosPDF()">📄 PDF</button>
+        <button class="btn verde" onclick="expNinosXLS()">📊 Excel</button>
+      </div>
+      <div id="listNinos"><div class="loading">Cargando…</div></div>
+    </section>
+
+    <!-- ---- CUMPLEAÑOS ---- -->
+    <section class="sc" id="sc-cumple">
+      <div class="card">
+        <div class="cal-head">
+          <button class="btn gris sm" onclick="calNav(-1)">‹</button>
+          <div id="calTitulo" class="cal-titulo"></div>
+          <button class="btn gris sm" onclick="calNav(1)">›</button>
+        </div>
+        <div id="calGrid" class="cal-grid"></div>
+      </div>
+      <div id="listCumple"><div class="loading">Cargando…</div></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ MODAL NIÑO ============ -->
+<div class="mo" id="mo-nino">
+  <div class="mbox">
+    <h2 id="moNinoTtl">👶 Nuevo niño</h2>
+    <input type="hidden" id="n-id">
+    <div class="fld">
+      <label>Nombre completo del niño *</label>
+      <input id="n-nombre" placeholder="Ej: Sofía Ramírez López">
+    </div>
+    <div class="fld">
+      <label>Nombre del padre / madre / tutor *</label>
+      <input id="n-tutor" placeholder="Ej: María López">
+    </div>
+    <div class="fld">
+      <label>Teléfono principal *</label>
+      <input id="n-tel" type="tel" inputmode="tel" placeholder="Ej: 0981 123 456">
+    </div>
+    <div class="fld">
+      <label>Otros contactos (mamá, papá, abuelos…)</label>
+      <div id="n-contactos"></div>
+      <button type="button" class="btn gris sm" style="margin-top:6px;width:100%;justify-content:center" onclick="addContactoRow()">➕ Agregar contacto</button>
+    </div>
+    <div class="fld">
+      <label>Fecha de cumpleaños</label>
+      <input id="n-cumple" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="fmtCumpleInput(this);calcEdadLive()">
+      <div id="n-edad" class="edad-live"></div>
+    </div>
+    <div class="fld">
+      <label>Comida especial / alergias / notas</label>
+      <textarea id="n-alim" placeholder="Ej: Sin lactosa. Alérgico al maní."></textarea>
+    </div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="cancelNino()">Cancelar</button>
+      <button class="btn verde" id="btnDelNino" style="display:none;flex:0 0 auto" onclick="delNino()">🗑</button>
+      <button class="btn" onclick="saveNino()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL INGRESO ============ -->
+<div class="mo" id="mo-ing">
+  <div class="mbox">
+    <h2>➕ Registrar ingreso</h2>
+    <div class="fld">
+      <label>Buscar niño *</label>
+      <input id="i-buscar" class="search" placeholder="🔎 Tocá y escribí el nombre…" oninput="ingFocus=true;filtrarIngreso()" onfocus="ingFocus=true;filtrarIngreso()" autocomplete="off">
+      <div id="i-lista" class="pick-list" style="display:none"></div>
+    </div>
+    <button class="btn gris sm" id="ing-nuevo" style="margin-bottom:14px;width:100%;justify-content:center;display:none" onclick="nuevoNinoDesdeIngreso()">➕ El niño no está — registrarlo ahora</button>
+    <div class="fg2">
+      <div class="fld">
+        <label>Hora de entrada</label>
+        <input id="i-entrada" type="time">
+      </div>
+    </div>
+    <div class="fld">
+      <label>Nota del día (opcional)</label>
+      <input id="i-nota" placeholder="Ej: Trae merienda propia">
+    </div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-ing')">Cancelar</button>
+      <button class="btn oro" onclick="saveIngreso()">Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL SALIDA INDIVIDUAL ============ -->
+<div class="mo" id="mo-salida">
+  <div class="mbox">
+    <h2 id="salTtl">🚪 Marcar salida</h2>
+    <input type="hidden" id="sal-id">
+    <div class="fld">
+      <label>Hora de salida</label>
+      <input id="sal-hora" type="time">
+    </div>
+    <div class="fld">
+      <label>¿Quién lo retiró?</label>
+      <div class="quick-row" id="sal-quick"></div>
+      <input id="sal-retiro" placeholder="Ej: Papá — Nelson Busto">
+    </div>
+    <div class="fld">
+      <label>Nota de salida (opcional)</label>
+      <textarea id="sal-nota" placeholder="Ej: Se sintió mal, lo buscó el papá."></textarea>
+    </div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-salida')">Cancelar</button>
+      <button class="btn oro" onclick="saveSalida()">Registrar salida</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL SALIDA GENERAL ============ -->
+<div class="mo" id="mo-salgen">
+  <div class="mbox">
+    <h2>🚪 Salida general del día</h2>
+    <p style="font-size:13px;color:var(--t2);margin:0 0 14px">
+      Marca la hora de salida a <b>todos los niños que ese día siguen sin salida</b> registrada.</p>
+    <div class="fg2">
+      <div class="fld">
+        <label>Día</label>
+        <input id="sg-fecha" type="date" oninput="actualizarSgInfo()">
+      </div>
+      <div class="fld">
+        <label>Hora de salida</label>
+        <input id="sg-hora" type="time">
+      </div>
+    </div>
+    <div id="sg-info" class="sg-info">…</div>
+    <div class="mo-actions">
+      <button class="btn gris" onclick="closeMo('mo-salgen')">Cancelar</button>
+      <button class="btn oro" onclick="salidaGeneral()">Marcar salida a todos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL HISTORIAL DE ASISTENCIA ============ -->
+<div class="mo" id="mo-hist">
+  <div class="mbox">
+    <h2 id="histTtl">📅 Historial</h2>
+    <div id="histBody"><div class="loading">Cargando…</div></div>
+    <div class="mo-actions" style="margin-top:12px">
+      <button class="btn gris" onclick="closeMo('mo-hist')">Cerrar</button>
+      <button class="btn verde" onclick="expHistXLS()">📊 Excel</button>
+      <button class="btn rojo" onclick="expHistPDF()">📄 PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL INSTALAR EN iPHONE ============ -->
+<div class="mo" id="mo-ios">
+  <div class="mbox">
+    <h2>📲 Instalar en iPhone</h2>
+    <p style="font-size:13.5px;color:var(--t2);margin:0 0 14px">
+      En iPhone/iPad se instala desde Safari en 3 pasos:</p>
+    <ol class="ios-steps">
+      <li><span class="n">1</span><div>Tocá el botón <b>Compartir</b> ⬆️ (abajo, en la barra de Safari).</div></li>
+      <li><span class="n">2</span><div>Bajá y elegí <b>“Agregar a inicio”</b> (Add to Home Screen).</div></li>
+      <li><span class="n">3</span><div>Tocá <b>Agregar</b>. Queda el ícono de Manitos en tu pantalla.</div></li>
+    </ol>
+    <div class="mo-actions" style="margin-top:14px">
+      <button class="btn" onclick="closeMo('mo-ios')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const SB_URL = 'https://hrqeuaxfjksdxhpnbzvn.supabase.co';
+const SB_KEY = 'sb_publishable_PEGlXR25GFLHjmaZoYyccA_GyqH_b9f';
+const PIN    = '3107';   // ← PIN de acceso de los encargados. Cambialo acá si querés otro.
+
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+/* ================= ESTADO ================= */
+let NINOS = [];        // fichas
+let ASIST_HOY = [];    // asistencia de hoy
+
+const hoyISO = () => new Date().toLocaleDateString('sv-SE');   // YYYY-MM-DD local
+const ahoraHM = () => new Date().toTimeString().slice(0,5);    // HH:MM local
+
+/* ================= PIN ================= */
+function checkPin(){
+  const v = document.getElementById('pin').value.trim();
+  if(v === PIN){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  }else{
+    document.getElementById('pinErr').textContent = 'PIN incorrecto';
+    document.getElementById('pin').value='';
+  }
+}
+document.getElementById('pin').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPin(); });
+
+/* ================= NAV ================= */
+function go(id){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.getElementById('sc-'+id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.sc===id));
+  if(id==='cumple') renderCumple();
+  if(id==='ninos') renderNinos();
+  if(id==='dia') renderDia();
+}
+
+/* ================= INIT ================= */
+async function initApp(){
+  const d = new Date();
+  document.getElementById('fechaHoy').textContent =
+    d.toLocaleDateString('es-PY',{weekday:'long',day:'numeric',month:'long'});
+  await cargarTodo();
+}
+
+async function cargarTodo(){
+  await Promise.all([cargarNinos(), cargarAsistHoy()]);
+  renderHoy(); renderNinos();
+}
+
+async function cargarNinos(){
+  const {data,error} = await sb.from('ninos').select('*').eq('activo',true).order('nombre_completo');
+  if(error){ toast('Error cargando niños'); console.error(error); return; }
+  NINOS = data||[];
+}
+
+async function cargarAsistHoy(){
+  const {data,error} = await sb.from('asistencia')
+    .select('*, ninos(nombre_completo,tutor_nombre,telefono,alimento_especial)')
+    .eq('fecha', hoyISO()).order('hora_entrada');
+  if(error){ toast('Error cargando asistencia'); console.error(error); return; }
+  ASIST_HOY = data||[];
+}
+
+/* ================= RENDER HOY ================= */
+function renderHoy(){
+  const cont = document.getElementById('listHoy');
+  if(!ASIST_HOY.length){
+    cont.innerHTML = '<div class="empty"><span class="big">🌤️</span>Nadie registrado hoy.<br>Tocá <b>Registrar ingreso</b> para empezar.</div>';
+    return;
+  }
+  const presentes = ASIST_HOY.filter(a=>!a.hora_salida);
+  const salieron  = ASIST_HOY.filter(a=>a.hora_salida);
+  let h='';
+  if(presentes.length){
+    h += `<div class="hd">🟢 En la guardería (${presentes.length})</div>`;
+    h += presentes.map(cardAsist).join('');
+  }
+  if(salieron.length){
+    h += `<div class="hd">✅ Ya se retiraron (${salieron.length})</div>`;
+    h += salieron.map(cardAsist).join('');
+  }
+  cont.innerHTML = h;
+}
+
+function cardAsist(a){
+  const n = a.ninos||{};
+  const tel = (n.telefono||'').replace(/\s/g,'');
+  const alim = (n.alimento_especial||'').trim();
+  const salio = !!a.hora_salida;
+  return `<div class="card">
+    <div class="nom">${esc(n.nombre_completo)||'(niño eliminado)'}</div>
+    <div class="sub">👤 ${esc(n.tutor_nombre)||'—'}</div>
+    <div class="meta">
+      <span class="pill">🕐 Entró ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'}</span>
+      ${salio?`<span class="pill verde">🚪 Salió ${a.hora_salida.slice(0,5)}</span>`:''}
+      ${salio&&a.retirado_por?`<span class="pill verde">🙋 Retiró: ${esc(a.retirado_por)}</span>`:''}
+      ${alim?`<span class="pill oro">🍽 ${esc(alim)}</span>`:''}
+      ${a.nota?`<span class="pill gris">📝 ${esc(a.nota)}</span>`:''}
+      ${salio&&a.nota_salida?`<span class="pill rojo">🚪📝 ${esc(a.nota_salida)}</span>`:''}
+    </div>
+    <div class="card-actions">
+      ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+      ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
+      ${!salio?`<button class="btn oro sm" onclick="openSalida('${a.id}')">🚪 Marcar salida</button>`
+              :`<button class="btn gris sm" onclick="deshacerSalida('${a.id}')">↩ Deshacer salida</button>`}
+    </div>
+  </div>`;
+}
+
+/* ================= RENDER NIÑOS ================= */
+function renderNinos(){
+  const cont = document.getElementById('listNinos');
+  const q = (document.getElementById('buscarNino').value||'').toLowerCase();
+  const list = NINOS.filter(n =>
+    n.nombre_completo.toLowerCase().includes(q) ||
+    (n.tutor_nombre||'').toLowerCase().includes(q));
+  const qs=(document.getElementById('buscarNino').value||'').trim();
+  const addBtn = qs ? `<button class="btn block" style="margin-top:10px" onclick="nuevoDesdeBusqueda()">➕ No está en la lista — agregar «${esc(qs)}» como nuevo</button>` : '';
+  const hint = qs ? '' : '<div class="al-hint">🔎 Buscá el nombre para ver si el niño ya está cargado. El botón para <b>agregar</b> aparece recién cuando buscás — así no se carga dos veces.</div>';
+  if(!NINOS.length){
+    cont.innerHTML = '<div class="empty"><span class="big">👶</span>Todavía no hay niños cargados.</div>'+
+      '<button class="btn block" onclick="nuevoDesdeBusqueda()">➕ Agregar el primer niño</button>';
+    return;
+  }
+  if(!list.length){
+    cont.innerHTML = '<div class="empty">Ningún niño coincide con «'+esc(qs)+'».</div>'+addBtn;
+    return;
+  }
+  // detectar nombres duplicados (sobre TODOS los niños, no solo el filtro)
+  const cuenta={};
+  NINOS.forEach(n=>{ const k=nomNorm(n.nombre_completo); cuenta[k]=(cuenta[k]||0)+1; });
+  const duplicados=Object.keys(cuenta).filter(k=>cuenta[k]>1);
+  let banner='';
+  if(duplicados.length){
+    const nombres=[...new Set(NINOS.filter(n=>cuenta[nomNorm(n.nombre_completo)]>1).map(n=>n.nombre_completo))];
+    banner=`<div class="dup-banner">⚠️ <b>${duplicados.length} nombre(s) duplicado(s):</b> ${esc(nombres.join(', '))}. Revisá y eliminá el repetido (✏ Editar → 🗑).</div>`;
+  }
+  cont.innerHTML = hint + banner + list.map(n=>{
+    const tel=(n.telefono||'').replace(/\s/g,'');
+    const esDup=cuenta[nomNorm(n.nombre_completo)]>1;
+    return `<div class="card${esDup?' card-dup':''}">
+      <div class="nom">${esc(n.nombre_completo)}${esDup?' <span class="pill rojo">⚠️ duplicado</span>':''}</div>
+      <div class="sub">👤 ${esc(n.tutor_nombre)}</div>
+      <div class="meta">
+        ${n.telefono?`<span class="pill">📞 ${esc(n.telefono)}</span>`:''}
+        ${n.cumpleanos?`<span class="pill oro">🎂 ${fmtFecha(n.cumpleanos)}</span>`:''}
+        ${n.alimento_especial?.trim()?`<span class="pill rojo">🍽 ${esc(n.alimento_especial)}</span>`:''}
+      </div>
+      <div class="card-actions">
+        ${tel?`<a class="btn verde sm" href="tel:${esc(tel)}">📞 Llamar</a>`:''}
+        ${tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬 WhatsApp</a>`:''}
+        <button class="btn gris sm" onclick="verHistorial('${n.id}')">📅 Historial</button>
+        <button class="btn gris sm" onclick="openNino('${n.id}')">✏ Editar</button>
+      </div>
+      ${contactosMiniHTML(n)}
+    </div>`;
+  }).join('') + addBtn;
+}
+function nuevoDesdeBusqueda(){
+  openNino();
+  const q=(document.getElementById('buscarNino').value||'').trim();
+  if(q) document.getElementById('n-nombre').value=q;   // precarga el nombre buscado
+}
+// Contactos adicionales en la tarjeta (📞 / 💬 por cada uno)
+function contactosMiniHTML(n){
+  const cs=(Array.isArray(n.contactos)?n.contactos:[]).filter(c=>c && (c.tel||c.nombre));
+  if(!cs.length) return '';
+  return cs.map(c=>{
+    const t=(c.tel||'').replace(/\s/g,'');
+    const etq=[c.rel,c.nombre].filter(Boolean).join(' — ')||'Contacto';
+    return `<div class="cto-mini"><span>👥 ${esc(etq)}${c.tel?' · '+esc(c.tel):''}</span>`+
+      (t?`<a class="btn verde sm" href="tel:${esc(t)}">📞</a>`+
+          `<a class="btn wa sm" target="_blank" rel="noopener" href="${esc(waLink(c.tel,'Hola, le escribimos de Manitos de la Mater por '+(n.nombre_completo||'su hijo/a')+'.'))}">💬</a>`:'')+
+      `</div>`;
+  }).join('');
+}
+
+/* ================= CALENDARIO ================= */
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DOW=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+let calAnio=null, calMes=null, _calBday={};
+
+function calNav(d){
+  calMes+=d;
+  if(calMes<0){ calMes=11; calAnio--; }
+  if(calMes>11){ calMes=0; calAnio++; }
+  renderCalendario();
+}
+function calDia(d){ const arr=_calBday[d]; if(arr&&arr.length) toast('🎂 '+arr.join(', ')); }
+
+function renderCalendario(){
+  if(calAnio==null){ const d=new Date(); calAnio=d.getFullYear(); calMes=d.getMonth(); }
+  document.getElementById('calTitulo').textContent=`${MESES[calMes]} ${calAnio}`;
+  // cumpleaños del mes mostrado: dia -> [nombres]
+  _calBday={};
+  NINOS.forEach(n=>{
+    if(!n.cumpleanos) return;
+    const p=n.cumpleanos.split('-'); if(p.length<3) return;
+    if((+p[1]-1)===calMes){ const dd=+p[2]; (_calBday[dd]=_calBday[dd]||[]).push(n.nombre_completo); }
+  });
+  const first=new Date(calAnio,calMes,1).getDay();
+  const dim=new Date(calAnio,calMes+1,0).getDate();
+  const hoy=new Date();
+  const esMesActual=(hoy.getFullYear()===calAnio && hoy.getMonth()===calMes);
+  let h=DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++) h+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const bday=_calBday[d];
+    const hoyCls=(esMesActual&&hoy.getDate()===d)?' hoy':'';
+    h+=`<div class="cal-cell${bday?' bday':''}${hoyCls}"${bday?` onclick="calDia(${d})" title="${esc(bday.join(', '))}"`:''}>`+
+       `<span class="cal-d">${d}</span>${bday?'<span class="cal-dot">🎂</span>':''}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=h;
+}
+
+/* ================= RENDER CUMPLEAÑOS ================= */
+function renderCumple(){
+  renderCalendario();
+  const cont = document.getElementById('listCumple');
+  const conCumple = NINOS.filter(n=>n.cumpleanos);
+  if(!conCumple.length){
+    cont.innerHTML='<div class="empty"><span class="big">🎂</span>Ningún niño tiene cumpleaños cargado.</div>';
+    return;
+  }
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const conDias = conCumple.map(n=>{
+    const [,,mm,dd]=('--'+n.cumpleanos).match(/(\d{4})-(\d{2})-(\d{2})/)||[];
+    let prox=new Date(hoy.getFullYear(), +mm-1, +dd);
+    if(prox<hoy) prox=new Date(hoy.getFullYear()+1, +mm-1, +dd);
+    const dias=Math.round((prox-hoy)/86400000);
+    return {n, dias, prox};
+  }).sort((a,b)=>a.dias-b.dias);
+  cont.innerHTML = `<div class="hd">🎂 Próximos cumpleaños</div>` + conDias.map(({n,dias})=>{
+    const et = dias===0?'¡HOY! 🎉':dias===1?'Mañana':`En ${dias} días`;
+    const cls = dias===0?'rojo':dias<=7?'oro':'gris';
+    return `<div class="card">
+      <div class="nom">${esc(n.nombre_completo)}</div>
+      <div class="meta">
+        <span class="pill oro">🎂 ${fmtFecha(n.cumpleanos)} (${edad(n.cumpleanos)} años)</span>
+        <span class="pill ${cls}">⏳ ${et}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= MODAL NIÑO ================= */
+function openNino(id){
+  const del=document.getElementById('btnDelNino');
+  if(id){
+    const n=NINOS.find(x=>x.id===id);
+    document.getElementById('moNinoTtl').textContent='✏ Editar niño';
+    document.getElementById('n-id').value=n.id;
+    document.getElementById('n-nombre').value=n.nombre_completo||'';
+    document.getElementById('n-tutor').value=n.tutor_nombre||'';
+    document.getElementById('n-tel').value=n.telefono||'';
+    document.getElementById('n-cumple').value=n.cumpleanos?fmtFecha(n.cumpleanos):'';
+    document.getElementById('n-alim').value=n.alimento_especial||'';
+    document.getElementById('n-contactos').innerHTML='';
+    (Array.isArray(n.contactos)?n.contactos:[]).forEach(c=>addContactoRow(c));
+    del.style.display='inline-flex';
+  }else{
+    document.getElementById('moNinoTtl').textContent='👶 Nuevo niño';
+    ['n-id','n-nombre','n-tutor','n-tel','n-cumple','n-alim'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('n-contactos').innerHTML='';
+    del.style.display='none';
+  }
+  calcEdadLive();
+  openMo('mo-nino');
+}
+// Auto-formatea dd/mm/aaaa mientras se escribe
+function fmtCumpleInput(el){
+  let v=el.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>=5) v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+  else if(v.length>=3) v=v.slice(0,2)+'/'+v.slice(2);
+  el.value=v;
+}
+// dd/mm/aaaa -> ISO (o null si inválida)
+function parseFechaLibre(s){
+  s=(s||'').trim(); if(!s) return null;
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(!m) return null;
+  const d=+m[1], mo=+m[2], y=+m[3];
+  if(mo<1||mo>12||d<1||d>31||y<1900||y>2100) return null;
+  const iso=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const dt=new Date(iso+'T00:00:00'); if(isNaN(dt.getTime())||dt.getUTCDate()!==d) return null;
+  return iso;
+}
+function calcEdadLive(){
+  const iso=parseFechaLibre(val('n-cumple')); const e=document.getElementById('n-edad');
+  if(iso){ e.textContent='🎂 Edad: '+edad(iso)+' años'; e.style.display='block'; }
+  else { e.textContent=''; e.style.display='none'; }
+}
+function cancelNino(){ _volverIngreso=false; closeMo('mo-nino'); }
+
+// ---- Contactos adicionales (form) ----
+const CTO_RELS=['Mamá','Papá','Abuelo/a','Tío/a','Hermano/a','Otro'];
+function addContactoRow(c){
+  c=c||{};
+  const wrap=document.getElementById('n-contactos');
+  const div=document.createElement('div');
+  div.className='cto-row';
+  div.innerHTML=
+    '<select class="cto-rel"><option value="">Relación</option>'+
+      CTO_RELS.map(r=>`<option${c.rel===r?' selected':''}>${r}</option>`).join('')+
+    '</select>'+
+    `<input class="cto-nom" placeholder="Nombre" value="${esc(c.nombre||'')}">`+
+    `<input class="cto-tel" type="tel" inputmode="tel" placeholder="Teléfono" value="${esc(c.tel||'')}">`+
+    '<button type="button" class="cto-del" onclick="this.parentElement.remove()">✕</button>';
+  wrap.appendChild(div);
+}
+function collectContactos(){
+  return [...document.querySelectorAll('#n-contactos .cto-row')].map(r=>({
+    rel: r.querySelector('.cto-rel').value.trim(),
+    nombre: r.querySelector('.cto-nom').value.trim(),
+    tel: r.querySelector('.cto-tel').value.trim()
+  })).filter(c=>c.nombre||c.tel);
+}
+
+async function saveNino(){
+  const cumpleTxt=val('n-cumple').trim();
+  const cumpleISO=parseFechaLibre(cumpleTxt);
+  if(cumpleTxt && !cumpleISO){ toast('Cumpleaños inválido. Usá dd/mm/aaaa'); return; }
+  const rec={
+    nombre_completo: val('n-nombre').trim(),
+    tutor_nombre:    val('n-tutor').trim(),
+    telefono:        val('n-tel').trim(),
+    cumpleanos:      cumpleISO,
+    alimento_especial: val('n-alim').trim(),
+    contactos:       collectContactos()
+  };
+  if(!rec.nombre_completo || !rec.tutor_nombre || !rec.telefono){
+    toast('Completá nombre, tutor y teléfono'); return;
+  }
+  const id=val('n-id');
+  // aviso de nombre duplicado
+  const dup=NINOS.find(n=>n.id!==id && nomNorm(n.nombre_completo)===nomNorm(rec.nombre_completo));
+  if(dup && !confirm(`⚠️ Ya existe un niño con el nombre "${rec.nombre_completo}" (tutor: ${dup.tutor_nombre||'—'}).\n\n¿Quizás es el mismo y solo cambia el contacto? Podés agregar el otro contacto en su ficha en vez de duplicarlo.\n\n¿Guardar igual?`)) return;
+  let error, nuevoId=null;
+  if(id){ ({error}=await sb.from('ninos').update(rec).eq('id',id)); }
+  else  { const r=await sb.from('ninos').insert(rec).select('id').single(); error=r.error; nuevoId=r.data?.id; }
+  if(error){ toast('Error al guardar'); console.error(error); return; }
+  closeMo('mo-nino'); toast(id?'Ficha actualizada':'Niño agregado');
+  await cargarNinos(); renderNinos();
+  if(_volverIngreso){ _volverIngreso=false; openIngreso(nuevoId); }  // vuelve al ingreso con el nuevo preseleccionado
+}
+
+async function delNino(){
+  const id=val('n-id'); if(!id) return;
+  if(!confirm('¿Eliminar esta ficha? Se borrará también su historial de asistencia.')) return;
+  const {error}=await sb.from('ninos').delete().eq('id',id);
+  if(error){ toast('Error al eliminar'); console.error(error); return; }
+  closeMo('mo-nino'); toast('Ficha eliminada');
+  await cargarTodo();
+}
+
+/* ================= MODAL INGRESO ================= */
+let ingSel=null;          // id del niño seleccionado en el ingreso
+let ingFocus=false;       // solo mostrar la lista cuando el selector está activo
+let _volverIngreso=false; // volver al ingreso tras registrar un niño nuevo
+
+function openIngreso(preId){
+  ingSel = preId || null;
+  ingFocus = false;
+  const inp=document.getElementById('i-buscar');
+  inp.value = preId ? ((NINOS.find(n=>n.id===preId)||{}).nombre_completo||'') : '';
+  const cont=document.getElementById('i-lista'); cont.style.display='none'; cont.innerHTML='';
+  const _b=document.getElementById('ing-nuevo'); if(_b) _b.style.display='none';
+  document.getElementById('i-entrada').value=ahoraHM();
+  document.getElementById('i-nota').value='';
+  openMo('mo-ing');
+}
+
+function filtrarIngreso(){
+  const cont=document.getElementById('i-lista');
+  const btn=document.getElementById('ing-nuevo');
+  if(btn) btn.style.display='none';
+  if(!ingFocus){ cont.style.display='none'; return; }   // no aparece nada hasta entrar al selector
+  const q=(document.getElementById('i-buscar').value||'').toLowerCase();
+  const qs=q.trim();
+  const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
+  const list=NINOS.filter(n=>n.nombre_completo.toLowerCase().includes(q)||(n.tutor_nombre||'').toLowerCase().includes(q));
+  cont.style.display='block';
+  if(btn && ((qs && !list.length) || !NINOS.length)) btn.style.display='flex';   // registrar solo si buscó y no hay match
+  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados.</div>'; return; }
+  if(!list.length){ cont.innerHTML='<div class="pick-empty">Ninguno coincide con «'+esc(qs)+'».</div>'; return; }
+  cont.innerHTML=list.slice(0,40).map(n=>
+    `<button type="button" class="pick-item${ingSel===n.id?' sel':''}" onclick="selIngreso('${n.id}')">`+
+      `<span>${esc(n.nombre_completo)}${yaHoy.has(n.id)?'<span class="pick-tag">ya ingresó</span>':''}</span>`+
+      `${ingSel===n.id?'<span class="pick-check">✓</span>':''}`+
+    `</button>`).join('');
+}
+function selIngreso(id){
+  ingSel=id; ingFocus=false;
+  document.getElementById('i-buscar').value=((NINOS.find(n=>n.id===id)||{}).nombre_completo||'');
+  document.getElementById('i-lista').style.display='none';
+}
+
+function nuevoNinoDesdeIngreso(){
+  _volverIngreso=true;
+  const q=(document.getElementById('i-buscar').value||'').trim();
+  closeMo('mo-ing');
+  openNino();
+  if(q) document.getElementById('n-nombre').value=q;   // precarga el nombre buscado
+}
+
+async function saveIngreso(){
+  if(!ingSel){ toast('Elegí un niño de la lista'); return; }
+  const rec={ nino_id:ingSel, fecha:hoyISO(), hora_entrada:val('i-entrada')||ahoraHM(), nota:val('i-nota').trim() };
+  const {error}=await sb.from('asistencia').insert(rec);
+  if(error){ toast('Error al registrar'); console.error(error); return; }
+  ingSel=null;
+  closeMo('mo-ing'); toast('Ingreso registrado ✅');
+  await cargarAsistHoy(); renderHoy(); go('hoy');
+}
+
+/* ================= HISTORIAL DE ASISTENCIA ================= */
+async function verHistorial(id){
+  const n=NINOS.find(x=>x.id===id);
+  document.getElementById('histTtl').textContent='📅 Historial — '+(n?n.nombre_completo:'');
+  document.getElementById('histBody').innerHTML='<div class="loading">Cargando…</div>';
+  openMo('mo-hist');
+  const {data,error}=await sb.from('asistencia')
+    .select('fecha,hora_entrada,hora_salida,nota,nota_salida,retirado_por').eq('nino_id',id).order('fecha',{ascending:false});
+  const body=document.getElementById('histBody');
+  _histData=data||[]; _histNombre=n?n.nombre_completo:'';
+  if(error){ body.innerHTML='<div class="empty">Error al cargar el historial.</div>'; console.error(error); return; }
+  if(!data||!data.length){ body.innerHTML='<div class="empty"><span class="big">📭</span>Sin registros de asistencia todavía.</div>'; return; }
+  body.innerHTML=`<div class="hd">${data.length} día(s) registrados</div>`+data.map(a=>
+    `<div class="hist-row">`+
+      `<div class="hist-f">${fmtFecha(a.fecha)}</div>`+
+      `<div class="hist-h">🕐 Entrada ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'} · Salida ${a.hora_salida?a.hora_salida.slice(0,5):'—'}${a.retirado_por?' · 🙋 '+esc(a.retirado_por):''}</div>`+
+      `${a.nota?`<div class="hist-n">📝 ${esc(a.nota)}</div>`:''}`+
+      `${a.nota_salida?`<div class="hist-n">🚪📝 ${esc(a.nota_salida)}</div>`:''}`+
+    `</div>`).join('');
+}
+
+let _histData=[], _histNombre='';
+async function expHistPDF(){
+  if(!_histData||!_histData.length){ toast('Sin registros para exportar'); return; }
+  const doc=await pdfDoc('Historial de asistencia', _histNombre+'  ·  '+_histData.length+' día(s)'); if(!doc) return;
+  const body=_histData.map(a=>[ fmtFecha(a.fecha), a.hora_entrada?a.hora_entrada.slice(0,5):'-', a.hora_salida?a.hora_salida.slice(0,5):'-', a.retirado_por||'', a.nota||'', a.nota_salida||'' ]);
+  tabla(doc,['Fecha','Entrada','Salida','Retiró','Nota del día','Nota salida'],body);
+  doc.save('historial_'+(_histNombre||'nino').replace(/\s+/g,'_')+'.pdf');
+}
+function expHistXLS(){
+  if(!_histData||!_histData.length){ toast('Sin registros para exportar'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=_histData.map(a=>({ Fecha:fmtFecha(a.fecha), Entrada:a.hora_entrada?a.hora_entrada.slice(0,5):'', Salida:a.hora_salida?a.hora_salida.slice(0,5):'', 'Retiró':a.retirado_por||'', 'Nota del día':a.nota||'', 'Nota salida':a.nota_salida||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Historial');
+  XLSX.writeFile(wb,'historial_'+(_histNombre||'nino').replace(/\s+/g,'_')+'.xlsx');
+}
+
+async function marcarSalida(id){
+  const {error}=await sb.from('asistencia').update({hora_salida:ahoraHM()}).eq('id',id);
+  if(error){ toast('Error'); console.error(error); return; }
+  toast('Salida marcada'); await cargarAsistHoy(); renderHoy();
+}
+async function deshacerSalida(id){
+  const {error}=await sb.from('asistencia').update({hora_salida:null,nota_salida:'',retirado_por:''}).eq('id',id);
+  if(error){ toast('Error'); console.error(error); return; }
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= SALIDA INDIVIDUAL (con nota + quién retiró) ================= */
+const RETIROS=['Papá','Mamá','Hermano/a','Abuelo/a','Tío/a','Otro'];
+function openSalida(id){
+  const a=ASIST_HOY.find(x=>x.id===id); const n=a&&a.ninos;
+  document.getElementById('salTtl').textContent='🚪 Salida'+(n?' — '+n.nombre_completo:'');
+  document.getElementById('sal-id').value=id;
+  document.getElementById('sal-hora').value=ahoraHM();
+  document.getElementById('sal-retiro').value='';
+  document.getElementById('sal-nota').value='';
+  document.getElementById('sal-quick').innerHTML=RETIROS.map(r=>`<button type="button" class="quick-chip" onclick="setRetiro('${r}')">${r}</button>`).join('');
+  openMo('mo-salida');
+}
+function setRetiro(r){
+  const inp=document.getElementById('sal-retiro');
+  inp.value = (r==='Otro') ? '' : r+' — ';
+  inp.focus();
+}
+async function saveSalida(){
+  const id=val('sal-id'); if(!id) return;
+  const rec={ hora_salida: val('sal-hora')||ahoraHM(), retirado_por: val('sal-retiro').trim(), nota_salida: val('sal-nota').trim() };
+  const {error}=await sb.from('asistencia').update(rec).eq('id',id);
+  if(error){ toast('Error al marcar salida'); console.error(error); return; }
+  closeMo('mo-salida'); toast('Salida registrada ✅');
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= HISTORIAL POR DÍA ================= */
+async function renderDia(){
+  const f=document.getElementById('dia-fecha');
+  if(!f.value) f.value=hoyISO();
+  const fecha=f.value;
+  const stats=document.getElementById('dia-stats');
+  const cont=document.getElementById('dia-lista');
+  stats.innerHTML=''; cont.innerHTML='<div class="loading">Cargando…</div>';
+  const {data,error}=await sb.from('asistencia')
+    .select('*, ninos(nombre_completo,tutor_nombre,telefono)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ cont.innerHTML='<div class="empty">Error al cargar.</div>'; console.error(error); return; }
+  if(!data||!data.length){ cont.innerHTML='<div class="empty"><span class="big">📭</span>Sin registros ese día.</div>'; return; }
+  const entraron=data.length, salieron=data.filter(a=>a.hora_salida).length, presentes=entraron-salieron;
+  stats.innerHTML=
+    `<div class="dia-stat"><b>${entraron}</b><span>ENTRARON</span></div>`+
+    `<div class="dia-stat"><b>${salieron}</b><span>SALIERON</span></div>`+
+    `<div class="dia-stat"><b>${presentes}</b><span>SIN SALIDA</span></div>`;
+  cont.innerHTML=data.map(a=>{
+    const n=a.ninos||{}; const salio=!!a.hora_salida;
+    return `<div class="card">
+      <div class="nom">${esc(n.nombre_completo)||'(niño eliminado)'}</div>
+      <div class="meta">
+        <span class="pill">🕐 Entró ${a.hora_entrada?a.hora_entrada.slice(0,5):'—'}</span>
+        <span class="pill ${salio?'verde':'gris'}">🚪 ${salio?('Salió '+a.hora_salida.slice(0,5)):'Sin salida'}</span>
+        ${salio&&a.retirado_por?`<span class="pill verde">🙋 ${esc(a.retirado_por)}</span>`:''}
+        ${a.nota?`<span class="pill gris">📝 ${esc(a.nota)}</span>`:''}
+        ${a.nota_salida?`<span class="pill rojo">🚪📝 ${esc(a.nota_salida)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function diaHoy(){ document.getElementById('dia-fecha').value=hoyISO(); renderDia(); }
+
+/* ================= SALIDA GENERAL DEL DÍA ================= */
+function openSalidaGen(){
+  document.getElementById('sg-fecha').value=hoyISO();
+  document.getElementById('sg-hora').value=ahoraHM();
+  actualizarSgInfo();
+  openMo('mo-salgen');
+}
+async function actualizarSgInfo(){
+  const info=document.getElementById('sg-info');
+  const fecha=val('sg-fecha');
+  if(!fecha){ info.textContent='Elegí un día.'; return; }
+  info.textContent='Contando pendientes…';
+  const {data,error}=await sb.from('asistencia').select('id').eq('fecha',fecha).is('hora_salida',null);
+  if(error){ info.textContent=''; console.error(error); return; }
+  const n=(data||[]).length, f=fmtFecha(fecha);
+  info.textContent = n? `${n} niño(s) sin salida el ${f} recibirán la hora indicada.` : `No hay niños pendientes de salida el ${f}.`;
+}
+async function salidaGeneral(){
+  const fecha=val('sg-fecha'), hora=val('sg-hora')||ahoraHM();
+  if(!fecha){ toast('Elegí un día'); return; }
+  const {data,error}=await sb.from('asistencia')
+    .update({hora_salida:hora}).eq('fecha',fecha).is('hora_salida',null).select('id');
+  if(error){ toast('Error al marcar salidas'); console.error(error); return; }
+  const n=(data||[]).length;
+  closeMo('mo-salgen');
+  toast(n? `Salida marcada a ${n} niño(s) ✅` : 'No había niños pendientes');
+  await cargarAsistHoy(); renderHoy();
+}
+
+/* ================= UTILES ================= */
+function openMo(id){ document.getElementById(id).classList.add('on'); }
+function closeMo(id){ document.getElementById(id).classList.remove('on'); }
+function val(id){ return document.getElementById(id).value; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtFecha(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function nomNorm(s){ return (s||'').trim().toLowerCase().replace(/\s+/g,' '); }
+// Normaliza teléfono paraguayo a formato internacional para WhatsApp (wa.me): 0981... -> 595981...
+function waNum(tel){
+  let d=(tel||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.startsWith('595')) return d;          // ya internacional
+  if(d.startsWith('0')) return '595'+d.slice(1);  // 0981... -> 595981...
+  return '595'+d;                            // sin 0 ni prefijo -> asume PY
+}
+function waLink(tel,msg){ const n=waNum(tel); return n?`https://wa.me/${n}${msg?('?text='+encodeURIComponent(msg)):''}`:''; }
+function edad(iso){ const b=new Date(iso), h=new Date(); let a=h.getFullYear()-b.getFullYear(); const mm=h.getMonth()-b.getMonth(); if(mm<0||(mm===0&&h.getDate()<b.getDate()))a--; return a; }
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ================= EXPORTAR (PDF con logo + Excel) ================= */
+let _logoData=null;
+async function getLogo(){
+  if(_logoData!==null) return _logoData;
+  try{
+    const r=await fetch('icon-192.png'); const b=await r.blob();   // ícono liviano para el header del PDF
+    _logoData=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(b); });
+  }catch(e){ _logoData=''; }
+  return _logoData;
+}
+async function pdfDoc(titulo, subtitulo){
+  if(!window.jspdf){ toast('Cargando PDF… reintentá'); return null; }
+  const { jsPDF } = window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const logo=await getLogo();
+  if(logo){ try{ doc.addImage(logo,'PNG',40,26,50,50); }catch(e){} }
+  doc.setFont('helvetica','bold'); doc.setTextColor(37,80,126); doc.setFontSize(15);
+  doc.text('Manitos de la Mater', 100, 48);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,107,125);
+  doc.text('Apostolado Infantil', 100, 63);
+  doc.setDrawColor(198,219,238); doc.line(40, 84, doc.internal.pageSize.getWidth()-40, 84);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(37,80,126);
+  doc.text(titulo, 40, 108);
+  if(subtitulo){ doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(90,107,125); doc.text(subtitulo, 40, 123); }
+  return doc;
+}
+function tabla(doc, head, body){
+  doc.autoTable({ startY:134, head:[head], body, styles:{fontSize:8.5,cellPadding:4}, headStyles:{fillColor:[37,80,126],textColor:255}, alternateRowStyles:{fillColor:[241,246,252]}, margin:{left:40,right:40} });
+}
+async function expDiaPDF(){
+  const fecha=val('dia-fecha')||hoyISO();
+  const {data,error}=await sb.from('asistencia').select('*, ninos(nombre_completo,tutor_nombre)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ toast('Error'); return; }
+  if(!data||!data.length){ toast('Sin registros ese día'); return; }
+  const doc=await pdfDoc('Asistencia por día','Fecha: '+fmtFecha(fecha)+'  ·  '+data.length+' niño(s)'); if(!doc) return;
+  const body=data.map(a=>[ (a.ninos&&a.ninos.nombre_completo)||'', a.hora_entrada?a.hora_entrada.slice(0,5):'—', a.hora_salida?a.hora_salida.slice(0,5):'—', a.retirado_por||'', a.nota||'', a.nota_salida||'' ]);
+  tabla(doc,['Niño','Entrada','Salida','Retiró','Nota','Nota salida'],body);
+  doc.save('asistencia_'+fecha+'.pdf');
+}
+function expDiaXLS(){ _expDiaXLS(); }
+async function _expDiaXLS(){
+  const fecha=val('dia-fecha')||hoyISO();
+  const {data,error}=await sb.from('asistencia').select('*, ninos(nombre_completo,tutor_nombre)').eq('fecha',fecha).order('hora_entrada');
+  if(error){ toast('Error'); return; }
+  if(!data||!data.length){ toast('Sin registros ese día'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=data.map(a=>({ Niño:(a.ninos&&a.ninos.nombre_completo)||'', Tutor:(a.ninos&&a.ninos.tutor_nombre)||'', Entrada:a.hora_entrada?a.hora_entrada.slice(0,5):'', Salida:a.hora_salida?a.hora_salida.slice(0,5):'', 'Retiró':a.retirado_por||'', Nota:a.nota||'', 'Nota salida':a.nota_salida||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Asistencia');
+  XLSX.writeFile(wb,'asistencia_'+fecha+'.xlsx');
+}
+async function expNinosPDF(){
+  if(!NINOS.length){ toast('No hay niños'); return; }
+  const doc=await pdfDoc('Lista de niños',NINOS.length+' niños  ·  '+fmtFecha(hoyISO())); if(!doc) return;
+  const body=NINOS.map(n=>[ n.nombre_completo, n.tutor_nombre||'', n.telefono||'', n.cumpleanos?fmtFecha(n.cumpleanos):'', n.cumpleanos?(edad(n.cumpleanos)+' años'):'', n.alimento_especial||'' ]);
+  tabla(doc,['Niño','Tutor','Teléfono','Cumpleaños','Edad','Comida especial'],body);
+  doc.save('ninos.pdf');
+}
+function expNinosXLS(){
+  if(!NINOS.length){ toast('No hay niños'); return; }
+  if(!window.XLSX){ toast('Cargando Excel… reintentá'); return; }
+  const rows=NINOS.map(n=>({ Niño:n.nombre_completo, Tutor:n.tutor_nombre||'', 'Teléfono':n.telefono||'', 'Cumpleaños':n.cumpleanos?fmtFecha(n.cumpleanos):'', Edad:n.cumpleanos?edad(n.cumpleanos):'', 'Comida especial':n.alimento_especial||'' }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Niños');
+  XLSX.writeFile(wb,'ninos.xlsx');
+}
+
+/* cerrar modal tocando el fondo */
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m){ if(m.id==='mo-nino') _volverIngreso=false; m.classList.remove('on'); } }));
+window.addEventListener('load',()=>document.getElementById('pin').focus());
+
+/* ================= INSTALAR APP (PWA) ================= */
+let deferredPrompt=null;
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+
+function verInstallBar(){
+  if(yaInstalada || localStorage.getItem('mm_install_off')==='1') return;
+  const bar=document.getElementById('installBar'); if(bar) bar.style.display='flex';
+}
+function ocultarInstall(){
+  const bar=document.getElementById('installBar'); if(bar) bar.style.display='none';
+  localStorage.setItem('mm_install_off','1');   // no molestar de nuevo
+}
+async function instalarApp(){
+  if(deferredPrompt){                 // Android/Chrome: instalador nativo
+    deferredPrompt.prompt();
+    const {outcome}=await deferredPrompt.userChoice;
+    deferredPrompt=null;
+    document.getElementById('installBar').style.display='none';
+    if(outcome==='accepted') toast('App instalada ✅');
+  } else if(esIOS){                   // iPhone: no hay instalador, mostrar pasos
+    openMo('mo-ios');
+  } else {
+    toast('Usá el menú del navegador → “Instalar app”');
+  }
+}
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; verInstallBar(); });
+window.addEventListener('appinstalled', ()=>{ document.getElementById('installBar').style.display='none'; });
+if(esIOS && !yaInstalada) verInstallBar();   // iOS no dispara beforeinstallprompt
+
+/* ================= SERVICE WORKER (offline + instalable) ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
