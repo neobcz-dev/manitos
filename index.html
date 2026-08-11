@@ -190,6 +190,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
 
 /* ---------- Aviso de duplicados ---------- */
 .dup-banner{background:#f7dede;border:1px solid var(--rojo);color:var(--rojo2);border-radius:12px;padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.4}
+.al-hint{background:var(--azul-cl);border:1px solid var(--brd2);color:var(--navy2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:12px}
 .card-dup{border-color:var(--rojo);border-width:2px}
 </style>
 </head>
@@ -254,8 +255,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
     <!-- ---- NIÑOS ---- -->
     <section class="sc" id="sc-ninos">
       <div class="row-tools">
-        <input class="search" id="buscarNino" placeholder="🔎 Buscar niño…" oninput="renderNinos()">
-        <button class="btn" onclick="openNino()">➕ Nuevo</button>
+        <input class="search" id="buscarNino" placeholder="🔎 Buscá el nombre del niño…" oninput="renderNinos()">
       </div>
       <div class="exp-row">
         <button class="btn rojo" onclick="expNinosPDF()">📄 PDF</button>
@@ -327,7 +327,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
       <input id="i-buscar" class="search" placeholder="🔎 Tocá y escribí el nombre…" oninput="ingFocus=true;filtrarIngreso()" onfocus="ingFocus=true;filtrarIngreso()" autocomplete="off">
       <div id="i-lista" class="pick-list" style="display:none"></div>
     </div>
-    <button class="btn gris sm" style="margin-bottom:14px;width:100%;justify-content:center" onclick="nuevoNinoDesdeIngreso()">➕ El niño no está — registrarlo ahora</button>
+    <button class="btn gris sm" id="ing-nuevo" style="margin-bottom:14px;width:100%;justify-content:center;display:none" onclick="nuevoNinoDesdeIngreso()">➕ El niño no está — registrarlo ahora</button>
     <div class="fg2">
       <div class="fld">
         <label>Hora de entrada</label>
@@ -545,11 +545,18 @@ function renderNinos(){
   const list = NINOS.filter(n =>
     n.nombre_completo.toLowerCase().includes(q) ||
     (n.tutor_nombre||'').toLowerCase().includes(q));
+  const qs=(document.getElementById('buscarNino').value||'').trim();
+  const addBtn = qs ? `<button class="btn block" style="margin-top:10px" onclick="nuevoDesdeBusqueda()">➕ No está en la lista — agregar «${esc(qs)}» como nuevo</button>` : '';
+  const hint = qs ? '' : '<div class="al-hint">🔎 Buscá el nombre para ver si el niño ya está cargado. El botón para <b>agregar</b> aparece recién cuando buscás — así no se carga dos veces.</div>';
   if(!NINOS.length){
-    cont.innerHTML = '<div class="empty"><span class="big">👶</span>Todavía no hay niños cargados.<br>Tocá <b>Nuevo</b> para agregar el primero.</div>';
+    cont.innerHTML = '<div class="empty"><span class="big">👶</span>Todavía no hay niños cargados.</div>'+
+      '<button class="btn block" onclick="nuevoDesdeBusqueda()">➕ Agregar el primer niño</button>';
     return;
   }
-  if(!list.length){ cont.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
+  if(!list.length){
+    cont.innerHTML = '<div class="empty">Ningún niño coincide con «'+esc(qs)+'».</div>'+addBtn;
+    return;
+  }
   // detectar nombres duplicados (sobre TODOS los niños, no solo el filtro)
   const cuenta={};
   NINOS.forEach(n=>{ const k=nomNorm(n.nombre_completo); cuenta[k]=(cuenta[k]||0)+1; });
@@ -559,7 +566,7 @@ function renderNinos(){
     const nombres=[...new Set(NINOS.filter(n=>cuenta[nomNorm(n.nombre_completo)]>1).map(n=>n.nombre_completo))];
     banner=`<div class="dup-banner">⚠️ <b>${duplicados.length} nombre(s) duplicado(s):</b> ${esc(nombres.join(', '))}. Revisá y eliminá el repetido (✏ Editar → 🗑).</div>`;
   }
-  cont.innerHTML = banner + list.map(n=>{
+  cont.innerHTML = hint + banner + list.map(n=>{
     const tel=(n.telefono||'').replace(/\s/g,'');
     const esDup=cuenta[nomNorm(n.nombre_completo)]>1;
     return `<div class="card${esDup?' card-dup':''}">
@@ -578,7 +585,12 @@ function renderNinos(){
       </div>
       ${contactosMiniHTML(n)}
     </div>`;
-  }).join('');
+  }).join('') + addBtn;
+}
+function nuevoDesdeBusqueda(){
+  openNino();
+  const q=(document.getElementById('buscarNino').value||'').trim();
+  if(q) document.getElementById('n-nombre').value=q;   // precarga el nombre buscado
 }
 // Contactos adicionales en la tarjeta (📞 / 💬 por cada uno)
 function contactosMiniHTML(n){
@@ -782,6 +794,7 @@ function openIngreso(preId){
   const inp=document.getElementById('i-buscar');
   inp.value = preId ? ((NINOS.find(n=>n.id===preId)||{}).nombre_completo||'') : '';
   const cont=document.getElementById('i-lista'); cont.style.display='none'; cont.innerHTML='';
+  const _b=document.getElementById('ing-nuevo'); if(_b) _b.style.display='none';
   document.getElementById('i-entrada').value=ahoraHM();
   document.getElementById('i-nota').value='';
   openMo('mo-ing');
@@ -789,13 +802,17 @@ function openIngreso(preId){
 
 function filtrarIngreso(){
   const cont=document.getElementById('i-lista');
+  const btn=document.getElementById('ing-nuevo');
+  if(btn) btn.style.display='none';
   if(!ingFocus){ cont.style.display='none'; return; }   // no aparece nada hasta entrar al selector
   const q=(document.getElementById('i-buscar').value||'').toLowerCase();
+  const qs=q.trim();
   const yaHoy=new Set(ASIST_HOY.map(a=>a.nino_id));
   const list=NINOS.filter(n=>n.nombre_completo.toLowerCase().includes(q)||(n.tutor_nombre||'').toLowerCase().includes(q));
   cont.style.display='block';
-  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados. Tocá "registrarlo ahora".</div>'; return; }
-  if(!list.length){ cont.innerHTML='<div class="pick-empty">Sin resultados. Tocá "registrarlo ahora".</div>'; return; }
+  if(btn && ((qs && !list.length) || !NINOS.length)) btn.style.display='flex';   // registrar solo si buscó y no hay match
+  if(!NINOS.length){ cont.innerHTML='<div class="pick-empty">No hay niños cargados.</div>'; return; }
+  if(!list.length){ cont.innerHTML='<div class="pick-empty">Ninguno coincide con «'+esc(qs)+'».</div>'; return; }
   cont.innerHTML=list.slice(0,40).map(n=>
     `<button type="button" class="pick-item${ingSel===n.id?' sel':''}" onclick="selIngreso('${n.id}')">`+
       `<span>${esc(n.nombre_completo)}${yaHoy.has(n.id)?'<span class="pick-tag">ya ingresó</span>':''}</span>`+
@@ -810,8 +827,10 @@ function selIngreso(id){
 
 function nuevoNinoDesdeIngreso(){
   _volverIngreso=true;
+  const q=(document.getElementById('i-buscar').value||'').trim();
   closeMo('mo-ing');
   openNino();
+  if(q) document.getElementById('n-nombre').value=q;   // precarga el nombre buscado
 }
 
 async function saveIngreso(){
